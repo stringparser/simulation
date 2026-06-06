@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 use crate::error::SimulationError;
+use crate::geometry::GeometryName;
 
 pub const DEFAULT_LATTICE_WIDTH: usize = 16;
 pub const DEFAULT_LATTICE_HEIGHT: usize = 16;
@@ -9,8 +10,9 @@ pub const MAX_LATTICE_SIZE: usize = 64;
 pub const DEFAULT_TEMPERATURE: f64 = 2.5;
 pub const DEFAULT_FIELD: f64 = 0.0;
 pub const DEFAULT_COUPLING: f64 = 1.0;
-pub const DEFAULT_GEOMETRY: &str = "square_2d_open";
+pub const DEFAULT_GEOMETRY: GeometryName = GeometryName::Square2DOpen;
 
+/// Runtime simulation parameters for a single session.
 #[derive(Debug, Clone)]
 pub struct SimConfig {
     pub width: usize,
@@ -18,7 +20,7 @@ pub struct SimConfig {
     pub temperature: f64,
     pub field: f64,
     pub coupling: f64,
-    pub geometry: String,
+    pub geometry: GeometryName,
     pub seed: Option<u64>,
 }
 
@@ -30,7 +32,7 @@ impl Default for SimConfig {
             temperature: DEFAULT_TEMPERATURE,
             field: DEFAULT_FIELD,
             coupling: DEFAULT_COUPLING,
-            geometry: DEFAULT_GEOMETRY.to_string(),
+            geometry: DEFAULT_GEOMETRY,
             seed: None,
         }
     }
@@ -64,15 +66,18 @@ impl SimInitParams {
             return Err(SimulationError::InvalidTemperature);
         }
 
+        let geometry = match self.geometry {
+            Some(name) => GeometryName::parse(&name)?,
+            None => DEFAULT_GEOMETRY,
+        };
+
         Ok(SimConfig {
             width,
             height,
             temperature,
             field: self.field.unwrap_or(DEFAULT_FIELD),
             coupling: self.coupling.unwrap_or(DEFAULT_COUPLING),
-            geometry: self
-                .geometry
-                .unwrap_or_else(|| DEFAULT_GEOMETRY.to_string()),
+            geometry,
             seed: self.seed,
         })
     }

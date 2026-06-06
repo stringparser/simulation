@@ -54,6 +54,7 @@ test: backend-test frontend-test
 	@echo "All tests passed."
 
 backend-test:
+	cd "$(BACKEND)" && cargo clippy --all-targets --all-features -- -D warnings
 	cd "$(BACKEND)" && cargo test
 
 frontend-test:

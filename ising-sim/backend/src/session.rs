@@ -1,7 +1,7 @@
 use crate::config::SimConfig;
 use crate::config::SimInitParams;
 use crate::error::SimulationError;
-use crate::geometry::{Geometry, LatticeGeometry};
+use crate::geometry::{Geometry, GeometryName, LatticeGeometry};
 use crate::interaction::NearestNeighbor;
 use crate::lattice::Lattice;
 use crate::metrics::{energy, magnetization};
@@ -9,13 +9,14 @@ use crate::monte_carlo::{SweepStats, sweep};
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 
+/// Serializable lattice state sent to clients.
 #[derive(Debug, Clone)]
 pub struct SessionSnapshot {
     pub spins: Vec<i8>,
     pub width: usize,
     pub height: usize,
     pub step: u64,
-    pub geometry: String,
+    pub geometry: GeometryName,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -39,12 +40,13 @@ pub struct SimulationSession {
     running: bool,
     sweeps_per_tick: u64,
     last_acceptance_rate: Option<f64>,
+    cached_snapshot: SessionSnapshot,
 }
 
 impl SimulationSession {
     pub fn new(params: SimInitParams) -> Result<Self, SimulationError> {
         let config = params.into_config()?;
-        let geometry = LatticeGeometry::from_name(&config.geometry, config.width, config.height)?;
+        let geometry = LatticeGeometry::from_name(config.geometry, config.width, config.height);
         let interaction = NearestNeighbor::new(config.coupling);
         let lattice = Lattice::new(geometry.num_sites(), config.seed);
         let rng = match config.seed {
@@ -52,7 +54,8 @@ impl SimulationSession {
             None => StdRng::from_os_rng(),
         };
 
-        Ok(Self {
+        let config_geometry = config.geometry;
+        let mut session = Self {
             geometry,
             interaction,
             lattice,
@@ -62,7 +65,16 @@ impl SimulationSession {
             running: false,
             sweeps_per_tick: 1,
             last_acceptance_rate: None,
-        })
+            cached_snapshot: SessionSnapshot {
+                spins: Vec::new(),
+                width: 0,
+                height: 0,
+                step: 0,
+                geometry: config_geometry,
+            },
+        };
+        session.refresh_snapshot();
+        Ok(session)
     }
 
     pub fn start(&mut self, steps_per_tick: Option<u64>) {
@@ -126,14 +138,9 @@ impl SimulationSession {
         Ok(total)
     }
 
-    pub fn snapshot(&self) -> SessionSnapshot {
-        SessionSnapshot {
-            spins: self.lattice.spins().to_vec(),
-            width: self.config.width,
-            height: self.config.height,
-            step: self.step,
-            geometry: self.geometry.name().to_string(),
-        }
+    pub fn snapshot(&mut self) -> &SessionSnapshot {
+        self.refresh_snapshot();
+        &self.cached_snapshot
     }
 
     pub fn metrics(&self) -> SessionMetrics {
@@ -150,5 +157,16 @@ impl SimulationSession {
             field: self.config.field,
             coupling: self.config.coupling,
         }
+    }
+
+    fn refresh_snapshot(&mut self) {
+        self.cached_snapshot.spins.clear();
+        self.cached_snapshot
+            .spins
+            .extend_from_slice(self.lattice.spins());
+        self.cached_snapshot.width = self.config.width;
+        self.cached_snapshot.height = self.config.height;
+        self.cached_snapshot.step = self.step;
+        self.cached_snapshot.geometry = self.geometry.name();
     }
 }

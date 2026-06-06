@@ -2,15 +2,20 @@ use crate::config::SimInitParams;
 use crate::error::SimulationError;
 use crate::session::{SessionMetrics, SessionSnapshot, SimulationSession};
 use crate::ws::messages::{ClientMessage, ServerMessage};
+use smallvec::{SmallVec, smallvec};
+use tracing::warn;
+
+pub type ResponseMessages = SmallVec<[ServerMessage; 2]>;
 
 pub fn handle_client_message(
     session: &mut Option<SimulationSession>,
     text: &str,
-) -> Vec<ServerMessage> {
+) -> ResponseMessages {
     let message: ClientMessage = match serde_json::from_str(text) {
         Ok(message) => message,
         Err(error) => {
-            return vec![ServerMessage::Error {
+            warn!(?error, "received invalid client message JSON");
+            return smallvec![ServerMessage::Error {
                 message: format!("invalid message: {error}"),
                 code: Some("invalid_json".into()),
             }];
@@ -23,7 +28,7 @@ pub fn handle_client_message(
 pub fn handle_parsed_message(
     session: &mut Option<SimulationSession>,
     message: ClientMessage,
-) -> Vec<ServerMessage> {
+) -> ResponseMessages {
     match message {
         ClientMessage::Init {
             width,
@@ -48,21 +53,17 @@ pub fn handle_parsed_message(
         ClientMessage::Start { steps_per_tick } => {
             with_session(session, |session| {
                 session.start(steps_per_tick);
-                vec![snapshot_to_messages(session).1]
+                smallvec![metrics_to_message(session.metrics())]
             })
         }
         ClientMessage::Pause => with_session(session, |session| {
             session.pause();
-            let (state, metrics) = snapshot_to_messages(session);
-            vec![state, metrics]
+            snapshot_to_messages(session)
         }),
         ClientMessage::Step { sweeps } => with_session(session, |session| {
             match session.run_sweeps(sweeps) {
-                Ok(_) => {
-                    let (state, metrics) = snapshot_to_messages(session);
-                    vec![state, metrics]
-                }
-                Err(error) => vec![error_to_message(error)],
+                Ok(_) => snapshot_to_messages(session),
+                Err(error) => smallvec![error_to_message(error)],
             }
         }),
         ClientMessage::SetParams {
@@ -71,52 +72,53 @@ pub fn handle_parsed_message(
             coupling,
         } => with_session(session, |session| {
             match session.set_params(temperature, field, coupling) {
-                Ok(()) => vec![snapshot_to_messages(session).1],
-                Err(error) => vec![error_to_message(error)],
+                Ok(()) => smallvec![metrics_to_message(session.metrics())],
+                Err(error) => smallvec![error_to_message(error)],
             }
         }),
-        ClientMessage::GetState => with_session(session, |session| {
-            let (state, metrics) = snapshot_to_messages(session);
-            vec![state, metrics]
-        }),
+        ClientMessage::GetState => with_session(session, snapshot_to_messages),
     }
 }
 
 fn init_session(
     session: &mut Option<SimulationSession>,
     params: SimInitParams,
-) -> Vec<ServerMessage> {
+) -> ResponseMessages {
     match SimulationSession::new(params) {
         Ok(new_session) => {
-            let (state, metrics) = snapshot_to_messages(&new_session);
+            let mut new_session = new_session;
+            let messages = snapshot_to_messages(&mut new_session);
             *session = Some(new_session);
-            vec![state, metrics]
+            messages
         }
-        Err(error) => vec![error_to_message(error)],
+        Err(error) => smallvec![error_to_message(error)],
     }
 }
 
 fn with_session(
     session: &mut Option<SimulationSession>,
-    f: impl FnOnce(&mut SimulationSession) -> Vec<ServerMessage>,
-) -> Vec<ServerMessage> {
+    f: impl FnOnce(&mut SimulationSession) -> ResponseMessages,
+) -> ResponseMessages {
     match session {
         Some(session) => f(session),
-        None => vec![error_to_message(SimulationError::NotInitialized)],
+        None => smallvec![error_to_message(SimulationError::NotInitialized)],
     }
 }
 
-fn snapshot_to_messages(session: &SimulationSession) -> (ServerMessage, ServerMessage) {
-    (state_to_message(session.snapshot()), metrics_to_message(session.metrics()))
+fn snapshot_to_messages(session: &mut SimulationSession) -> ResponseMessages {
+    smallvec![
+        state_to_message(session.snapshot()),
+        metrics_to_message(session.metrics()),
+    ]
 }
 
-pub fn state_to_message(snapshot: SessionSnapshot) -> ServerMessage {
+pub fn state_to_message(snapshot: &SessionSnapshot) -> ServerMessage {
     ServerMessage::State {
-        spins: snapshot.spins,
+        spins: snapshot.spins.clone(),
         width: snapshot.width,
         height: snapshot.height,
         step: snapshot.step,
-        geometry: snapshot.geometry,
+        geometry: snapshot.geometry.as_str().to_string(),
     }
 }
 

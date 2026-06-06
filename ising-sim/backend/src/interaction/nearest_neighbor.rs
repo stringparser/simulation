@@ -43,7 +43,7 @@ mod tests {
     #[test]
     fn delta_energy_for_all_up_2x2_corner() {
         let geometry = Square2DOpen::new(2, 2);
-        let lattice = Lattice::from_spins(vec![1, 1, 1, 1]);
+        let lattice = Lattice::try_from_spins(vec![1, 1, 1, 1]).unwrap();
         let interaction = NearestNeighbor::new(1.0);
 
         // Site 0 has neighbors 1 and 2, all spins up => neighbor_sum = 2

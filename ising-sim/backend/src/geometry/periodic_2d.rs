@@ -1,4 +1,5 @@
 use super::Geometry;
+use crate::geometry::GeometryName;
 
 #[derive(Debug, Clone)]
 pub struct Square2DPeriodic {
@@ -56,8 +57,8 @@ impl Geometry for Square2DPeriodic {
         Some(y * self.width + x)
     }
 
-    fn name(&self) -> &'static str {
-        "square_2d_periodic"
+    fn name(&self) -> GeometryName {
+        GeometryName::Square2DPeriodic
     }
 }
 

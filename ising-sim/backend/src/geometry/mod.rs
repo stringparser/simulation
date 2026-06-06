@@ -1,6 +1,8 @@
+mod name;
 mod periodic_2d;
 mod square_2d;
 
+pub use name::GeometryName;
 pub use periodic_2d::Square2DPeriodic;
 pub use square_2d::Square2DOpen;
 
@@ -12,7 +14,7 @@ pub trait Geometry {
     fn neighbors(&self, site: usize) -> &[usize];
     fn index_to_coord(&self, site: usize) -> (usize, usize);
     fn coord_to_index(&self, x: usize, y: usize) -> Option<usize>;
-    fn name(&self) -> &'static str;
+    fn name(&self) -> GeometryName;
 }
 
 #[derive(Debug, Clone)]
@@ -22,14 +24,17 @@ pub enum LatticeGeometry {
 }
 
 impl LatticeGeometry {
-    pub fn from_name(name: &str, width: usize, height: usize) -> Result<Self, SimulationError> {
+    pub fn from_name(name: GeometryName, width: usize, height: usize) -> Self {
         match name {
-            "square_2d_open" => Ok(Self::Open(Square2DOpen::new(width, height))),
-            "square_2d_periodic" => Ok(Self::Periodic(Square2DPeriodic::new(width, height))),
-            _ => Err(SimulationError::UnsupportedGeometry {
-                name: name.to_string(),
-            }),
+            GeometryName::Square2DOpen => Self::Open(Square2DOpen::new(width, height)),
+            GeometryName::Square2DPeriodic => {
+                Self::Periodic(Square2DPeriodic::new(width, height))
+            }
         }
+    }
+
+    pub fn try_from_str(name: &str, width: usize, height: usize) -> Result<Self, SimulationError> {
+        Ok(Self::from_name(GeometryName::parse(name)?, width, height))
     }
 }
 
@@ -63,9 +68,10 @@ impl Geometry for LatticeGeometry {
         delegate_geometry!(self, coord_to_index(x, y))
     }
 
-    fn name(&self) -> &'static str {
+    fn name(&self) -> GeometryName {
         delegate_geometry!(self, name())
     }
 }
 
-pub const GEOMETRY_NAMES: [&str; 2] = ["square_2d_open", "square_2d_periodic"];
+pub const GEOMETRY_NAMES: [GeometryName; 2] =
+    [GeometryName::Square2DOpen, GeometryName::Square2DPeriodic];

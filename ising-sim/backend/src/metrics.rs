@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn all_up_2x2_has_expected_energy_and_magnetization() {
         let geometry = Square2DOpen::new(2, 2);
-        let lattice = Lattice::from_spins(vec![1, 1, 1, 1]);
+        let lattice = Lattice::try_from_spins(vec![1, 1, 1, 1]).unwrap();
         let interaction = NearestNeighbor::new(1.0);
         let config = SimConfig::default();
 
@@ -48,8 +48,8 @@ mod tests {
     #[test]
     fn all_down_2x2_matches_all_up_energy() {
         let geometry = Square2DOpen::new(2, 2);
-        let up = Lattice::from_spins(vec![1, 1, 1, 1]);
-        let down = Lattice::from_spins(vec![-1, -1, -1, -1]);
+        let up = Lattice::try_from_spins(vec![1, 1, 1, 1]).unwrap();
+        let down = Lattice::try_from_spins(vec![-1, -1, -1, -1]).unwrap();
         let interaction = NearestNeighbor::new(1.0);
         let config = SimConfig::default();
 

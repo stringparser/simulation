@@ -1,7 +1,9 @@
+use crate::error::SimulationError;
 use rand::Rng;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 
+/// Square-lattice spin configuration with values in `{+1, -1}`.
 #[derive(Debug, Clone)]
 pub struct Lattice {
     spins: Vec<i8>,
@@ -21,16 +23,20 @@ impl Lattice {
         Self { spins }
     }
 
-    pub fn from_spins(spins: Vec<i8>) -> Self {
-        assert!(
-            spins.iter().all(|&s| s == 1 || s == -1),
-            "spins must be +1 or -1"
-        );
-        Self { spins }
+    pub fn try_from_spins(spins: Vec<i8>) -> Result<Self, SimulationError> {
+        if spins.iter().all(|&spin| spin == 1 || spin == -1) {
+            Ok(Self { spins })
+        } else {
+            Err(SimulationError::InvalidSpins)
+        }
     }
 
     pub fn len(&self) -> usize {
         self.spins.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.spins.is_empty()
     }
 
     pub fn spin(&self, site: usize) -> i8 {
@@ -43,5 +49,21 @@ impl Lattice {
 
     pub fn flip(&mut self, site: usize) {
         self.spins[site] = -self.spins[site];
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn try_from_spins_rejects_invalid_values() {
+        assert!(Lattice::try_from_spins(vec![1, 0, -1]).is_err());
+    }
+
+    #[test]
+    fn is_empty_tracks_spin_count() {
+        assert!(Lattice::try_from_spins(vec![]).unwrap().is_empty());
+        assert!(!Lattice::try_from_spins(vec![1]).unwrap().is_empty());
     }
 }

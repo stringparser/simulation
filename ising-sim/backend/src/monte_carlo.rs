@@ -78,7 +78,7 @@ mod tests {
     #[test]
     fn negative_delta_energy_always_accepts() {
         let geometry = Square2DOpen::new(2, 2);
-        let mut lattice = Lattice::from_spins(vec![1, -1, -1, 1]);
+        let mut lattice = Lattice::try_from_spins(vec![1, -1, -1, 1]).unwrap();
         let interaction = NearestNeighbor::new(1.0);
         let config = SimConfig {
             temperature: 0.1,

@@ -1,4 +1,5 @@
 use super::Geometry;
+use crate::geometry::GeometryName;
 
 #[derive(Debug, Clone)]
 pub struct Square2DOpen {
@@ -64,8 +65,8 @@ impl Geometry for Square2DOpen {
         Some(y * self.width + x)
     }
 
-    fn name(&self) -> &'static str {
-        "square_2d_open"
+    fn name(&self) -> GeometryName {
+        GeometryName::Square2DOpen
     }
 }
 
