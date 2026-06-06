@@ -1,4 +1,9 @@
+import { GEOMETRY_OPTIONS } from "../config/geometries";
 import { useSimulationStore } from "../store/simulationStore";
+
+function geometryLabel(name: string): string {
+  return GEOMETRY_OPTIONS.find((option) => option.value === name)?.label ?? name;
+}
 
 function formatNumber(value: number | null, digits = 2): string {
   return value === null ? "—" : value.toFixed(digits);
@@ -20,7 +25,7 @@ export function MetricsPanel() {
         <div>
           <dt>Geometry</dt>
           <dd>
-            {geometry} ({width}×{height})
+            {geometryLabel(geometry)} ({width}×{height})
           </dd>
         </div>
         <div>

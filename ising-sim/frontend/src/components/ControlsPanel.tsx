@@ -1,3 +1,4 @@
+import { GEOMETRY_OPTIONS } from "../config/geometries";
 import { useSimulationStore } from "../store/simulationStore";
 
 export function ControlsPanel() {
@@ -7,6 +8,7 @@ export function ControlsPanel() {
   const temperature = useSimulationStore((state) => state.temperature);
   const field = useSimulationStore((state) => state.field);
   const coupling = useSimulationStore((state) => state.coupling);
+  const geometry = useSimulationStore((state) => state.geometry);
   const start = useSimulationStore((state) => state.start);
   const pause = useSimulationStore((state) => state.pause);
   const stepSimulation = useSimulationStore((state) => state.stepSimulation);
@@ -14,12 +16,30 @@ export function ControlsPanel() {
   const setTemperature = useSimulationStore((state) => state.setTemperature);
   const setField = useSimulationStore((state) => state.setField);
   const setCoupling = useSimulationStore((state) => state.setCoupling);
+  const setGeometry = useSimulationStore((state) => state.setGeometry);
 
   const disabled = connectionStatus !== "connected";
+  const geometryLocked = disabled || running;
 
   return (
     <section className="controls-panel">
       <h2>Controls</h2>
+
+      <label className="controls-panel__select">
+        <span>Geometry</span>
+        <select
+          value={geometry}
+          disabled={geometryLocked}
+          onChange={(event) => setGeometry(event.target.value)}
+        >
+          {GEOMETRY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="controls-panel__hint">Geometry is fixed during a run. Reset to apply a new choice.</p>
 
       <label className="controls-panel__field">
         <span>Temperature</span>

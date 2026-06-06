@@ -122,6 +122,37 @@ input {
   color: #bdbdbd;
 }
 
+.controls-panel__select {
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.controls-panel__select span {
+  color: #bdbdbd;
+}
+
+.controls-panel__select select {
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  background: #252525;
+  color: inherit;
+}
+
+.controls-panel__select select:disabled {
+  opacity: 0.45;
+}
+
+.controls-panel__hint {
+  margin: -0.25rem 0 0.75rem;
+  font-size: 0.8125rem;
+  color: #888;
+}
+
 .controls-panel__actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

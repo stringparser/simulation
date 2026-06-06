@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 use crate::config::SimConfig;
-use crate::geometry::{Geometry, Square2DOpen};
+use crate::geometry::{Geometry, LatticeGeometry};
 use crate::interaction::NearestNeighbor;
 use crate::lattice::Lattice;
 use crate::metrics::{energy, magnetization};
@@ -12,7 +12,7 @@ use rand::rngs::StdRng;
 
 #[derive(Debug)]
 pub struct SimulationSession {
-    geometry: Square2DOpen,
+    geometry: LatticeGeometry,
     interaction: NearestNeighbor,
     lattice: Lattice,
     config: SimConfig,
@@ -36,17 +36,14 @@ pub struct InitParams {
 
 impl SimulationSession {
     pub fn init(params: InitParams) -> Result<Self, String> {
-        if let Some(ref name) = params.geometry {
-            if name != "square_2d_open" {
-                return Err(format!("unsupported geometry: {name}"));
-            }
-        }
-
         let width = params.width.unwrap_or(16);
         let height = params.height.unwrap_or(16);
         if width == 0 || height == 0 {
             return Err("width and height must be positive".into());
         }
+
+        let geometry_name = params.geometry.as_deref().unwrap_or("square_2d_open");
+        let geometry = LatticeGeometry::from_name(geometry_name, width, height)?;
 
         let coupling = params.coupling.unwrap_or(1.0);
         let config = SimConfig {
@@ -58,7 +55,6 @@ impl SimulationSession {
             seed: params.seed,
         };
 
-        let geometry = Square2DOpen::new(width, height);
         let interaction = NearestNeighbor::new(coupling);
         let lattice = Lattice::new(geometry.num_sites(), config.seed);
         let rng = match config.seed {

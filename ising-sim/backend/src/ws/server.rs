@@ -292,4 +292,42 @@ mod tests {
             ServerMessage::Metrics { .. }
         ));
     }
+
+    #[tokio::test]
+    async fn websocket_init_periodic_geometry() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        tokio::spawn(async move {
+            let state = AppState { tick_ms: 50 };
+            let app = Router::new()
+                .route("/ws", get(ws_handler))
+                .with_state(state);
+            axum::serve(listener, app).await.unwrap();
+        });
+
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        let (mut ws, _) = connect_async(format!("ws://{addr}/ws"))
+            .await
+            .expect("connect to websocket");
+
+        let _ready = ws.next().await.unwrap().unwrap();
+
+        ws.send(WsMessage::Text(
+            r#"{"type":"init","geometry":"square_2d_periodic","temperature":2.5,"field":0.0,"coupling":1.0}"#.into(),
+        ))
+        .await
+        .unwrap();
+
+        let state_text = ws.next().await.unwrap().unwrap().into_text().unwrap();
+        let state: ServerMessage = serde_json::from_str(&state_text).unwrap();
+        assert!(matches!(
+            state,
+            ServerMessage::State {
+                geometry,
+                ..
+            } if geometry == "square_2d_periodic"
+        ));
+    }
 }

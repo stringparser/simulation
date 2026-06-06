@@ -38,6 +38,7 @@ export interface SimulationStore {
   setTemperature: (temperature: number) => void;
   setField: (field: number) => void;
   setCoupling: (coupling: number) => void;
+  setGeometry: (geometry: string) => void;
   applyServerMessage: (message: ServerMessage) => void;
 }
 
@@ -46,7 +47,7 @@ let client: SimulationClient | null = null;
 function buildInitPayload(
   state: Pick<
     SimulationStore,
-    "width" | "height" | "temperature" | "field" | "coupling"
+    "width" | "height" | "temperature" | "field" | "coupling" | "geometry"
   >,
   params?: InitParams,
 ) {
@@ -54,7 +55,7 @@ function buildInitPayload(
     type: "init" as const,
     width: params?.width ?? state.width,
     height: params?.height ?? state.height,
-    geometry: params?.geometry ?? "square_2d_open",
+    geometry: params?.geometry ?? state.geometry,
     temperature: params?.temperature ?? state.temperature,
     field: params?.field ?? state.field,
     coupling: params?.coupling ?? state.coupling,
@@ -144,6 +145,10 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   setCoupling: (coupling) => {
     set({ coupling });
     client?.send({ type: "set_params", coupling });
+  },
+
+  setGeometry: (geometry) => {
+    set({ geometry });
   },
 
   applyServerMessage: (message) => {

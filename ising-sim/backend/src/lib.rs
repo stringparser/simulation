@@ -8,7 +8,7 @@ pub mod session;
 pub mod ws;
 
 pub use config::SimConfig;
-pub use geometry::{Geometry, Square2DOpen};
+pub use geometry::{Geometry, LatticeGeometry, Square2DOpen, Square2DPeriodic, GEOMETRY_NAMES};
 pub use interaction::{Interaction, NearestNeighbor};
 pub use lattice::Lattice;
 pub use metrics::{energy, magnetization};
