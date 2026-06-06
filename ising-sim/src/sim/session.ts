@@ -1,7 +1,7 @@
 import type { GeometryName } from "../config/geometries";
 import { initParamsToConfig, type SimConfig, type SimInitParams } from "./config";
 import { SimulationError } from "./errors";
-import { createGeometry, type Geometry } from "./geometry";
+import { GeometryOrchestrator, type GeometryInstance } from "./geometry";
 import { NearestNeighbor } from "./interaction";
 import { Lattice } from "./lattice";
 import { energy, magnetization } from "./metrics";
@@ -10,8 +10,13 @@ import { SeededRng, sessionRngSeed } from "./rng";
 
 export interface SessionSnapshot {
   spins: number[];
+  /** @deprecated Use dimensions[0] */
   width: number;
+  /** @deprecated Use dimensions[1] */
   height: number;
+  dimensions: readonly number[];
+  rank: number;
+  maxNeighbors: number;
   step: number;
   geometry: GeometryName;
 }
@@ -26,7 +31,7 @@ export interface SessionMetrics {
 }
 
 export class SimulationSession {
-  private readonly geometry: Geometry;
+  private readonly layout: GeometryInstance;
   private interaction: NearestNeighbor;
   private readonly lattice: Lattice;
   private config: SimConfig;
@@ -38,39 +43,45 @@ export class SimulationSession {
   private cachedSnapshot: SessionSnapshot;
 
   private constructor(
-    geometry: Geometry,
+    layout: GeometryInstance,
     interaction: NearestNeighbor,
     lattice: Lattice,
     config: SimConfig,
     rng: SeededRng,
   ) {
-    this.geometry = geometry;
+    this.layout = layout;
     this.interaction = interaction;
     this.lattice = lattice;
     this.config = config;
     this.rng = rng;
     this.cachedSnapshot = {
       spins: [],
-      width: config.width,
-      height: config.height,
+      width: layout.dimensions[0],
+      height: layout.dimensions[1],
+      dimensions: [...layout.dimensions],
+      rank: layout.definition.rank,
+      maxNeighbors: layout.maxNeighbors(),
       step: 0,
-      geometry: config.geometry,
+      geometry: layout.definition.name,
     };
     this.refreshSnapshot();
   }
 
   static create(params: SimInitParams = {}): SimulationSession {
     const config = initParamsToConfig(params);
-    const geometry = createGeometry(config.geometry, config.width, config.height);
+    const layout = GeometryOrchestrator.create(config.geometry, [
+      config.width,
+      config.height,
+    ]);
     const interaction = new NearestNeighbor(config.coupling);
-    const lattice = Lattice.create(geometry.numSites(), config.seed);
+    const lattice = Lattice.create(layout.numSites(), config.seed);
     const rngSeed = sessionRngSeed(config.seed);
     const rng =
       rngSeed === undefined
         ? new SeededRng(Date.now() >>> 0)
         : SeededRng.fromSeed(rngSeed);
 
-    return new SimulationSession(geometry, interaction, lattice, config, rng);
+    return new SimulationSession(layout, interaction, lattice, config, rng);
   }
 
   start(stepsPerTick = 1): void {
@@ -119,7 +130,7 @@ export class SimulationSession {
     for (let sweepIndex = 0; sweepIndex < sweeps; sweepIndex += 1) {
       const stats = sweep(
         this.lattice,
-        this.geometry,
+        this.layout.core,
         this.interaction,
         this.config,
         this.rng,
@@ -139,6 +150,9 @@ export class SimulationSession {
       spins: [...this.cachedSnapshot.spins],
       width: this.cachedSnapshot.width,
       height: this.cachedSnapshot.height,
+      dimensions: [...this.cachedSnapshot.dimensions],
+      rank: this.cachedSnapshot.rank,
+      maxNeighbors: this.cachedSnapshot.maxNeighbors,
       step: this.cachedSnapshot.step,
       geometry: this.cachedSnapshot.geometry,
     };
@@ -146,7 +160,7 @@ export class SimulationSession {
 
   getMetrics(): SessionMetrics {
     return {
-      energy: energy(this.lattice, this.geometry, this.interaction, this.config),
+      energy: energy(this.lattice, this.layout.core, this.interaction, this.config),
       magnetization: magnetization(this.lattice),
       acceptanceRate: this.lastAcceptanceRate,
       temperature: this.config.temperature,
@@ -157,9 +171,12 @@ export class SimulationSession {
 
   private refreshSnapshot(): void {
     this.cachedSnapshot.spins = this.lattice.spinsArray();
-    this.cachedSnapshot.width = this.config.width;
-    this.cachedSnapshot.height = this.config.height;
+    this.cachedSnapshot.dimensions = [...this.layout.dimensions];
+    this.cachedSnapshot.width = this.layout.dimensions[0];
+    this.cachedSnapshot.height = this.layout.dimensions[1];
+    this.cachedSnapshot.rank = this.layout.definition.rank;
+    this.cachedSnapshot.maxNeighbors = this.layout.maxNeighbors();
     this.cachedSnapshot.step = this.step;
-    this.cachedSnapshot.geometry = this.geometry.name();
+    this.cachedSnapshot.geometry = this.layout.definition.name;
   }
 }

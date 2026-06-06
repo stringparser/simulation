@@ -1,5 +1,5 @@
 import { DEFAULT_SIM_CONFIG } from "../config";
-import { Square2DOpen } from "../geometry";
+import { Square2DOpen } from "../geometry/open";
 import { NearestNeighbor } from "../interaction";
 import { Lattice } from "../lattice";
 import { energy, magnetization } from "../metrics";

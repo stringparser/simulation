@@ -9,6 +9,12 @@ describe("SimulationSession", () => {
 
     expect(snapshot.width).toBe(LATTICE_SIZE.defaultWidth);
     expect(snapshot.height).toBe(LATTICE_SIZE.defaultHeight);
+    expect(snapshot.dimensions).toEqual([
+      LATTICE_SIZE.defaultWidth,
+      LATTICE_SIZE.defaultHeight,
+    ]);
+    expect(snapshot.rank).toBe(2);
+    expect(snapshot.maxNeighbors).toBe(4);
     expect(snapshot.step).toBe(0);
     expect(snapshot.spins).toHaveLength(snapshot.width * snapshot.height);
   });

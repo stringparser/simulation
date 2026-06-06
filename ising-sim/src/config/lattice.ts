@@ -1,3 +1,5 @@
+import { SimulationError } from "../sim/errors";
+
 export const LATTICE_SIZE = {
   min: 4,
   max: 64,
@@ -18,4 +20,23 @@ export function clampLatticeSize(
 
 export function latticeSiteCount(width: number, height: number): number {
   return width * height;
+}
+
+export function validateDimensions(dimensions: readonly number[]): void {
+  if (dimensions.length === 0) {
+    throw SimulationError.invalidLatticeSize(0, 0);
+  }
+
+  for (const dimension of dimensions) {
+    if (
+      !Number.isFinite(dimension) ||
+      dimension < LATTICE_SIZE.min ||
+      dimension > LATTICE_SIZE.max
+    ) {
+      throw SimulationError.invalidLatticeSize(
+        dimensions[0] ?? dimension,
+        dimensions[1] ?? dimension,
+      );
+    }
+  }
 }

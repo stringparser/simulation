@@ -2,8 +2,8 @@ export { initParamsToConfig, validateLatticeSize, DEFAULT_SIM_CONFIG } from "./c
 export type { SimConfig, SimInitParams } from "./config";
 export { SimulationError } from "./errors";
 export type { SimulationErrorCode } from "./errors";
-export { createGeometry, Square2DOpen, Square2DPeriodic } from "./geometry";
-export type { Geometry } from "./geometry";
+export { createGeometry, GeometryOrchestrator } from "./geometry";
+export type { Geometry, GeometryDefinition, GeometryInstance, LayoutGeometry } from "./geometry";
 export { NearestNeighbor } from "./interaction";
 export type { Interaction } from "./interaction";
 export { Lattice } from "./lattice";

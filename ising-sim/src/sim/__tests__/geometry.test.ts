@@ -1,4 +1,5 @@
-import { Square2DOpen, Square2DPeriodic } from "../geometry";
+import { Square2DOpen } from "../geometry/open";
+import { Square2DPeriodic } from "../geometry/periodic";
 
 describe("Square2DOpen", () => {
   const geometry = new Square2DOpen(4, 4);

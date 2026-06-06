@@ -1,7 +1,7 @@
 import type { GeometryName } from "../../config/geometries";
-import type { Geometry } from "./types";
+import type { LayoutGeometry } from "./types";
 
-export class Square2DOpen implements Geometry {
+export class Square2DOpen implements LayoutGeometry {
   readonly width: number;
   readonly height: number;
   private readonly neighborLists: number[][];
