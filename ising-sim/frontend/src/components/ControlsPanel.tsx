@@ -8,7 +8,6 @@ import { SliderControl } from "./SliderControl";
 
 export function ControlsPanel() {
   const {
-    connectionStatus,
     running,
     initialized,
     temperature,
@@ -17,6 +16,7 @@ export function ControlsPanel() {
     geometry,
     width,
     height,
+    error,
     start,
     pause,
     stepSimulation,
@@ -29,11 +29,13 @@ export function ControlsPanel() {
     setHeight,
   } = useControlsPanelState();
 
-  const { initLocked, paramsLocked, canStart, canPause, canStep, disabled } =
-    deriveControlLocks(connectionStatus, running, initialized);
+  const { initLocked, paramsLocked, canStart, canPause, canStep } =
+    deriveControlLocks(running, initialized);
 
   return (
     <PanelSection title="Controls" className="controls-panel">
+      {error ? <p className="controls-panel__error">{error}</p> : null}
+
       <FieldControl label="Geometry">
         <select
           className="control__input"
@@ -123,7 +125,7 @@ export function ControlsPanel() {
         <button type="button" className="btn" disabled={!canStep} onClick={() => stepSimulation(1)}>
           Step
         </button>
-        <button type="button" className="btn" disabled={disabled} onClick={reset}>
+        <button type="button" className="btn" onClick={reset}>
           Reset
         </button>
       </div>

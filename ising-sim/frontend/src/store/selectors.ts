@@ -1,28 +1,19 @@
 import { useShallow } from "zustand/react/shallow";
-import type { ConnectionStatus } from "../types/messages";
 import { useSimulationStore } from "./simulationStore";
 
-export function deriveControlLocks(
-  connectionStatus: ConnectionStatus,
-  running: boolean,
-  initialized: boolean,
-) {
-  const disabled = connectionStatus !== "connected";
-
+export function deriveControlLocks(running: boolean, initialized: boolean) {
   return {
-    disabled,
-    initLocked: disabled || running,
-    paramsLocked: disabled || !initialized,
-    canStart: !disabled && initialized && !running,
-    canPause: !disabled && initialized && running,
-    canStep: !disabled && initialized && !running,
+    initLocked: running,
+    paramsLocked: !initialized,
+    canStart: initialized && !running,
+    canPause: initialized && running,
+    canStep: initialized && !running,
   };
 }
 
 export function useControlsPanelState() {
   return useSimulationStore(
     useShallow((state) => ({
-      connectionStatus: state.connectionStatus,
       running: state.running,
       initialized: state.initialized,
       temperature: state.temperature,
@@ -31,6 +22,7 @@ export function useControlsPanelState() {
       geometry: state.geometry,
       width: state.width,
       height: state.height,
+      error: state.error,
       start: state.start,
       pause: state.pause,
       stepSimulation: state.stepSimulation,
@@ -67,15 +59,6 @@ export function useLatticeViewState() {
       height: state.height,
       geometry: state.geometry,
       initialized: state.initialized,
-    })),
-  );
-}
-
-export function useConnectionState() {
-  return useSimulationStore(
-    useShallow((state) => ({
-      connectionStatus: state.connectionStatus,
-      error: state.error,
     })),
   );
 }

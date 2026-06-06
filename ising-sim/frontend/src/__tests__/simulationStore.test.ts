@@ -1,13 +1,12 @@
 import {
-  resetSimulationClientForTests,
+  resetSimulationEngineForTests,
   useSimulationStore,
 } from "../store/simulationStore";
 
 describe("useSimulationStore", () => {
   beforeEach(() => {
-    resetSimulationClientForTests();
+    resetSimulationEngineForTests();
     useSimulationStore.setState({
-      connectionStatus: "disconnected",
       error: null,
       spins: null,
       width: 16,
@@ -25,42 +24,41 @@ describe("useSimulationStore", () => {
     });
   });
 
-  it("updates state and metrics from server messages", () => {
-    useSimulationStore.getState().applyServerMessage({
-      type: "state",
-      spins: [1, -1, 1, -1],
-      width: 2,
-      height: 2,
-      step: 4,
-      geometry: "square_2d_open",
-    });
-
-    useSimulationStore.getState().applyServerMessage({
-      type: "metrics",
-      energy: -1.5,
-      magnetization: 0,
-      acceptance_rate: 0.25,
-      temperature: 2.5,
-      field: 0,
-      coupling: 1,
-    });
+  it("initializes a local simulation session", () => {
+    useSimulationStore.getState().init({ seed: 7 });
 
     const state = useSimulationStore.getState();
     expect(state.initialized).toBe(true);
-    expect(state.step).toBe(4);
-    expect(state.energy).toBe(-1.5);
-    expect(state.acceptanceRate).toBe(0.25);
+    expect(state.spins).toHaveLength(256);
+    expect(state.energy).not.toBeNull();
+    expect(state.magnetization).not.toBeNull();
   });
 
-  it("marks running false when an error arrives", () => {
-    useSimulationStore.setState({ running: true });
-    useSimulationStore.getState().applyServerMessage({
-      type: "error",
-      message: "boom",
-      code: "test",
-    });
+  it("advances the step counter when stepping manually", () => {
+    useSimulationStore.getState().init({ seed: 1 });
+    useSimulationStore.getState().stepSimulation(3);
 
-    expect(useSimulationStore.getState().running).toBe(false);
-    expect(useSimulationStore.getState().error).toBe("boom");
+    const state = useSimulationStore.getState();
+    expect(state.step).toBe(3);
+    expect(state.running).toBe(false);
+    expect(state.acceptanceRate).not.toBeNull();
+  });
+
+  it("stores validation errors from invalid init params", () => {
+    useSimulationStore.getState().init({ width: 2, height: 16 });
+
+    const state = useSimulationStore.getState();
+    expect(state.initialized).toBe(false);
+    expect(state.error).toMatch(/lattice size/i);
+  });
+
+  it("updates step on tick when running", () => {
+    useSimulationStore.getState().init({ seed: 1 });
+    useSimulationStore.getState().start();
+    useSimulationStore.getState().tick();
+
+    const state = useSimulationStore.getState();
+    expect(state.running).toBe(true);
+    expect(state.step).toBeGreaterThan(0);
   });
 });

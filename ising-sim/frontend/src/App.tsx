@@ -1,16 +1,17 @@
 import { useEffect } from "react";
 import { LatticeView } from "./components/LatticeView";
 import { SidePanel } from "./components/SidePanel";
+import { useSimulationLoop } from "./hooks/useSimulationLoop";
 import { useSimulationStore } from "./store/simulationStore";
 
 export function App() {
-  const connect = useSimulationStore((state) => state.connect);
-  const disconnect = useSimulationStore((state) => state.disconnect);
+  const init = useSimulationStore((state) => state.init);
+
+  useSimulationLoop();
 
   useEffect(() => {
-    connect();
-    return () => disconnect();
-  }, [connect, disconnect]);
+    init();
+  }, [init]);
 
   return (
     <main className="app">

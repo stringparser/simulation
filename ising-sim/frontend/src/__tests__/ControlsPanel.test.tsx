@@ -5,12 +5,12 @@ import { useSimulationStore } from "../store/simulationStore";
 describe("ControlsPanel", () => {
   beforeEach(() => {
     useSimulationStore.setState({
-      connectionStatus: "connected",
       initialized: true,
       running: false,
       temperature: 2.5,
       field: 0,
       coupling: 1,
+      error: null,
     });
   });
 

@@ -1,18 +1,17 @@
 # Ising Simulator
 
-Real-time 2D Ising model visualization: a Rust Monte Carlo engine over WebSockets, with a React frontend for live lattice rendering and parameter control.
+Real-time 2D Ising model visualization in the browser: a TypeScript Monte Carlo engine with a React UI for live lattice rendering and parameter control.
 
 ## Features
 
 - **Live simulation** — start, pause, and step a Metropolis Monte Carlo run
-- **Canvas lattice view** — spins rendered as a color-coded grid (swappable renderer)
+- **Canvas lattice view** — spins colored by aligned neighbor count (black → blue/orange gradient)
 - **Configurable at init** — lattice size (4–64), geometry (open edges or periodic/torus)
 - **Runtime parameters** — temperature `T`, external field `h`, coupling `J` adjustable mid-run
 - **Observables** — energy, magnetization, acceptance rate, sweep count
 
 ## Prerequisites
 
-- [Rust](https://rustup.rs/) (stable toolchain)
 - [Node.js](https://nodejs.org/) 20+
 
 ## Quick start
@@ -25,64 +24,46 @@ make dev
 
 Then open http://localhost:5173.
 
-The frontend connects automatically to `ws://127.0.0.1:8080/ws` (proxied via Vite in dev), sends `init`, and displays the lattice. Use **Start** to run continuously, **Step** for single sweeps, or **Reset** after changing geometry/size.
-
-### CLI benchmark (no browser)
-
-```bash
-make demo
-```
-
-Runs 1000 Metropolis sweeps on a 16×16 lattice and prints energy and magnetization to stdout.
+The simulation runs entirely in the browser. Use **Start** to run continuously, **Step** for single sweeps, or **Reset** after changing geometry/size.
 
 ## Make targets
 
 | Command | Description |
 |---------|-------------|
-| `make setup` | `cargo fetch` + `npm install` |
-| `make dev` | Backend WebSocket server + Vite dev server (parallel) |
-| `make demo` | Phase 1 CLI benchmark (`cargo run -- --demo`) |
-| `make test` | Backend (`cargo test`) + frontend (`jest`) |
-| `make build` | Release backend binary + production frontend bundle |
-| `make clean` | Remove `target/`, `node_modules/`, `dist/` |
+| `make setup` | `npm install` |
+| `make dev` | Vite dev server |
+| `make test` | Frontend Jest tests |
+| `make build` | Production frontend bundle |
+| `make clean` | Remove `node_modules/`, `dist/` |
 | `make help` | Print available targets |
 
 ### Environment variables
 
 | Variable | Default | Used by |
 |----------|---------|---------|
-| `BACKEND_PORT` | `8080` | WebSocket server bind port |
 | `FRONTEND_PORT` | `5173` | Vite dev server port |
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Frontend (Vite + React + Zustand + Jest)                   │
+│  Browser (Vite + React + Zustand + Jest)                    │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
 │  │ LatticeView  │  │ Controls     │  │ MetricsPanel      │  │
 │  │ (canvas)     │  │ T, h, J, run │  │ E, M, step count  │  │
 │  └──────┬───────┘  └──────┬───────┘  └─────────┬─────────┘  │
 │         └─────────────────┴────────────────────┘            │
 │                           │                                 │
-│              SimulationClient (WebSocket)                   │
-└───────────────────────────┼─────────────────────────────────┘
-                            │ JSON over WebSocket
-┌───────────────────────────┼─────────────────────────────────┐
-│  Backend (Rust + axum + tokio)                              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │ ws/server.rs   — connection loop, tick while running │   │
-│  │ ws/handler.rs  — parse commands, dispatch to session │   │
-│  └────────────────────────┬─────────────────────────────┘   │
+│              simulationStore (Zustand)                      │
 │                           │                                 │
 │  ┌────────────────────────┴─────────────────────────────┐   │
-│  │ SimulationSession                                    │   │
+│  │ SimulationSession (TypeScript)                       │   │
 │  │  geometry → interaction → Metropolis sweep → metrics │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-In development, Vite proxies `/ws` to the backend so the frontend can connect on the same origin.
+When **Start** is pressed, a 50 ms interval advances the simulation in the main thread.
 
 ## Physics
 
@@ -116,59 +97,7 @@ H = -J \sum_{\langle i,j \rangle} s_i s_j - h \sum_i s_i
 | `square_2d_open` | Open edges — boundary sites have fewer neighbors |
 | `square_2d_periodic` | Torus — periodic boundary conditions, every site has 4 neighbors |
 
-Geometry and lattice size are chosen in the UI (or via `init`) and **fixed for the lifetime of a run**. Click **Reset** to re-initialize with new values.
-
-## WebSocket protocol
-
-Endpoint: `ws://<host>:<port>/ws`  
-Format: JSON messages tagged by `"type"`. Protocol version: **1**.
-
-### Client → server
-
-| type | Payload | Effect |
-|------|---------|--------|
-| `init` | `{ width?, height?, geometry?, temperature?, field?, coupling?, seed? }` | Create or reset simulation |
-| `start` | `{ steps_per_tick? }` | Begin continuous sweeps (default 1 per tick) |
-| `pause` | — | Stop continuous sweeps |
-| `step` | `{ sweeps }` | Run N sweeps once, push state + metrics |
-| `set_params` | `{ temperature?, field?, coupling? }` | Update parameters mid-run |
-| `get_state` | — | Request current state + metrics snapshot |
-
-### Server → client
-
-| type | Payload |
-|------|---------|
-| `ready` | `{ protocol_version }` — sent on connect |
-| `state` | `{ spins, width, height, step, geometry }` |
-| `metrics` | `{ energy, magnetization, acceptance_rate?, temperature, field, coupling }` |
-| `error` | `{ message, code? }` |
-
-### Example session
-
-```json
-← {"type":"ready","protocol_version":1}
-
-→ {"type":"init","width":8,"height":10,"geometry":"square_2d_periodic","temperature":2.5,"field":0,"coupling":1,"seed":42}
-
-← {"type":"state","spins":[...],"width":8,"height":10,"step":0,"geometry":"square_2d_periodic"}
-← {"type":"metrics","energy":-12.0,"magnetization":6.0,"acceptance_rate":null,"temperature":2.5,"field":0,"coupling":1}
-
-→ {"type":"step","sweeps":5}
-
-→ {"type":"start","steps_per_tick":1}
-→ {"type":"pause"}
-```
-
-### Error codes
-
-| code | Meaning |
-|------|---------|
-| `invalid_json` | Malformed message |
-| `invalid_lattice_size` | Width or height outside 4–64 |
-| `init_failed` | Unsupported geometry or init error |
-| `invalid_params` | e.g. non-positive temperature |
-| `invalid_step` | `sweeps` must be ≥ 1 |
-| `not_initialized` | Command sent before `init` |
+Geometry and lattice size are chosen in the UI and **fixed for the lifetime of a run**. Click **Reset** to re-initialize with new values.
 
 ## Project layout
 
@@ -177,76 +106,33 @@ ising-sim/
 ├── Makefile              # setup, dev, test, build
 ├── README.md             # this file
 ├── PLAN.md               # original design document
-├── backend/
-│   ├── Cargo.toml
-│   └── src/
-│       ├── main.rs           # WebSocket server entry (+ --demo CLI)
-│       ├── lib.rs
-│       ├── config.rs         # defaults, SimInitParams, size validation
-│       ├── error.rs          # SimulationError enum
-│       ├── session.rs        # SimulationSession, snapshot/metrics types
-│       ├── geometry/         # open + periodic 2D lattices
-│       ├── interaction/      # nearest-neighbor coupling
-│       ├── lattice.rs        # spin storage
-│       ├── monte_carlo.rs    # Metropolis sweep
-│       ├── metrics.rs        # energy, magnetization
-│       └── ws/
-│           ├── messages.rs   # wire protocol types
-│           ├── handler.rs    # command dispatch
-│           └── server.rs     # axum WebSocket server
 └── frontend/
     ├── package.json
-    ├── vite.config.ts        # dev server + /ws proxy
+    ├── vite.config.ts
     └── src/
         ├── App.tsx
-        ├── api/websocket.ts  # SimulationClient (reconnect, queue)
+        ├── hooks/useSimulationLoop.ts
         ├── store/simulationStore.ts
-        ├── types/messages.ts
-        ├── config/           # lattice bounds, geometry options
-        ├── rendering/        # LatticeRenderer + canvas impl
-        ├── components/       # LatticeView, Controls, Metrics, Banner
+        ├── sim/                  # Monte Carlo engine (ported from Rust)
+        ├── config/               # lattice bounds, geometry options
+        ├── rendering/            # LatticeRenderer + canvas impl
+        ├── components/           # LatticeView, Controls, Metrics
         └── __tests__/
 ```
-
-## Backend modules
-
-| Module | Responsibility |
-|--------|----------------|
-| `config` | Constants, `SimConfig`, `SimInitParams`, lattice size validation |
-| `error` | Typed `SimulationError` with stable wire codes |
-| `geometry` | `Geometry` trait, `LatticeGeometry` enum (open / periodic) |
-| `interaction` | `Interaction` trait, `NearestNeighbor` (ΔE for Metropolis) |
-| `lattice` | `+1`/`-1` spin array, random init |
-| `monte_carlo` | Single sweep: random site selection, accept/reject |
-| `metrics` | Total energy and magnetization |
-| `session` | Per-connection simulation state; no WebSocket dependency |
-| `ws/handler` | Maps `ClientMessage` → session ops → `ServerMessage` |
-| `ws/server` | Axum route, connection loop, tick while `running` |
 
 ## Frontend modules
 
 | Module | Responsibility |
 |--------|----------------|
-| `api/websocket.ts` | WebSocket client with reconnect backoff and outbound queue |
-| `store/simulationStore.ts` | Zustand single source of truth; dispatches WS messages |
-| `rendering/` | `LatticeRenderer` interface; `createCanvasRenderer()` default |
+| `sim/` | `SimulationSession`, geometry, Metropolis sweep, metrics |
+| `store/simulationStore.ts` | Zustand single source of truth; drives local session |
+| `hooks/useSimulationLoop.ts` | 50 ms tick loop while running |
+| `rendering/` | `LatticeRenderer` interface; neighbor-color canvas renderer |
 | `components/LatticeView` | Mounts renderer, redraws on spin updates |
 | `components/ControlsPanel` | Geometry, size, T/h/J sliders, Start/Pause/Step/Reset |
 | `components/MetricsPanel` | Energy, magnetization, acceptance, step count |
-| `components/ConnectionBanner` | WebSocket status and error display |
-
-The renderer is intentionally abstracted: swap `createCanvasRenderer` for another implementation without changing the store or protocol.
 
 ## Development
-
-### Run backend only
-
-```bash
-cd backend
-BACKEND_PORT=8080 cargo run
-```
-
-### Run frontend only
 
 ```bash
 cd frontend
@@ -254,48 +140,26 @@ npm install
 npm run dev
 ```
 
-### Test manually with websocat
-
-```bash
-websocat ws://127.0.0.1:8080/ws
-```
-
-Paste JSON lines from the [example session](#example-session) above.
-
 ## Testing
 
 ```bash
 make test
 ```
 
-| Suite | Count | Covers |
-|-------|-------|--------|
-| Backend (`cargo test`) | 18 tests | geometry, Metropolis, handler, WebSocket integration |
-| Frontend (`jest`) | 9 tests | message parsing, store, canvas renderer, controls, lattice config |
-
 Run individually:
 
 ```bash
-cd backend && cargo test
 cd frontend && npm test
 ```
 
-## Implementation status
-
-| Phase | Status | Summary |
-|-------|--------|---------|
-| 1 — Backend core | Done | Lattice, geometry, Metropolis, metrics, CLI demo |
-| 2 — WebSocket server | Done | axum server, JSON protocol, session per connection |
-| 3 — Frontend | Done | React UI, Zustand, canvas renderer, live updates |
-| 4 — Geometry extensibility | Done | Open + periodic geometries, UI selector |
-| 5 — Polish | Partial | README, Makefile; charts/CI not yet added |
-
-See [PLAN.md](./PLAN.md) for the original design rationale and future work (Glauber dynamics, larger lattices with delta encoding, phase diagrams, etc.).
+The `sim/` package includes unit tests for geometry, Metropolis updates, metrics, and session lifecycle.
 
 ## Tech stack
 
 | Layer | Technologies |
 |-------|--------------|
-| Backend | Rust, tokio, axum, serde, rand |
-| Frontend | TypeScript, React 19, Zustand, Vite, Jest, Testing Library |
-| Dev tooling | Makefile, Vite WS proxy |
+| Simulation | TypeScript (Metropolis MC, seeded RNG) |
+| UI | React 19, Zustand, Vite, Jest, Testing Library |
+| Dev tooling | Makefile |
+
+See [PLAN.md](./PLAN.md) for the original design rationale and future work (Glauber dynamics, larger lattices, phase diagrams, etc.).

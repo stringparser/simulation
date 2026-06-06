@@ -2,22 +2,53 @@ import { create } from "zustand";
 import {
   DEFAULT_GEOMETRY,
   type GeometryName,
-  isGeometryName,
 } from "../config/geometries";
 import { clampLatticeSize, LATTICE_SIZE } from "../config/lattice";
 import { SIMULATION_DEFAULTS } from "../config/simulationParams";
-import { SimulationClient } from "../api/websocket";
-import type {
-  ConnectionStatus,
-  InitParams,
-  ServerMessage,
-} from "../types/messages";
+import {
+  SimulationError,
+  SimulationSession,
+  type SimInitParams,
+} from "../sim";
 
 const DEFAULT_WIDTH = LATTICE_SIZE.defaultWidth;
 const DEFAULT_HEIGHT = LATTICE_SIZE.defaultHeight;
+const TICK_MS = 50;
+
+let session: SimulationSession | null = null;
+
+function errorMessage(error: unknown): string {
+  if (error instanceof SimulationError) {
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Unexpected simulation error";
+}
+
+function syncFromSession(current: SimulationSession) {
+  const snapshot = current.getSnapshot();
+  const metrics = current.getMetrics();
+
+  return {
+    spins: snapshot.spins,
+    width: snapshot.width,
+    height: snapshot.height,
+    step: snapshot.step,
+    geometry: snapshot.geometry,
+    energy: metrics.energy,
+    magnetization: metrics.magnetization,
+    acceptanceRate: metrics.acceptanceRate,
+    temperature: metrics.temperature,
+    field: metrics.field,
+    coupling: metrics.coupling,
+    initialized: true,
+    error: null as string | null,
+  };
+}
 
 export interface SimulationStore {
-  connectionStatus: ConnectionStatus;
   error: string | null;
   spins: number[] | null;
   width: number;
@@ -32,45 +63,23 @@ export interface SimulationStore {
   magnetization: number | null;
   acceptanceRate: number | null;
   initialized: boolean;
-  connect: (url?: string) => void;
-  disconnect: () => void;
-  init: (params?: InitParams) => void;
+  init: (params?: SimInitParams) => void;
   reset: () => void;
   start: () => void;
   pause: () => void;
   stepSimulation: (sweeps?: number) => void;
+  tick: () => void;
   setTemperature: (temperature: number) => void;
   setField: (field: number) => void;
   setCoupling: (coupling: number) => void;
   setGeometry: (geometry: GeometryName) => void;
   setWidth: (width: number) => void;
   setHeight: (height: number) => void;
-  applyServerMessage: (message: ServerMessage) => void;
 }
 
-let client: SimulationClient | null = null;
-
-function buildInitPayload(
-  state: Pick<
-    SimulationStore,
-    "width" | "height" | "temperature" | "field" | "coupling" | "geometry"
-  >,
-  params?: InitParams,
-) {
-  return {
-    type: "init" as const,
-    width: params?.width ?? state.width,
-    height: params?.height ?? state.height,
-    geometry: params?.geometry ?? state.geometry,
-    temperature: params?.temperature ?? state.temperature,
-    field: params?.field ?? state.field,
-    coupling: params?.coupling ?? state.coupling,
-    seed: params?.seed,
-  };
-}
+export const TICK_INTERVAL_MS = TICK_MS;
 
 export const useSimulationStore = create<SimulationStore>((set, get) => ({
-  connectionStatus: "disconnected",
   error: null,
   spins: null,
   width: DEFAULT_WIDTH,
@@ -86,71 +95,136 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   acceptanceRate: null,
   initialized: false,
 
-  connect: (url) => {
-    if (client) {
-      return;
-    }
-
-    client = new SimulationClient(
-      url,
-      (message) => get().applyServerMessage(message),
-      (connectionStatus) => set({ connectionStatus }),
-    );
-    client.connect();
-  },
-
-  disconnect: () => {
-    client?.disconnect();
-    client = null;
-    set({ connectionStatus: "disconnected", running: false });
-  },
-
   init: (params) => {
     const state = get();
-    client?.send(buildInitPayload(state, params));
+    const initParams: SimInitParams = {
+      width: params?.width ?? state.width,
+      height: params?.height ?? state.height,
+      geometry: params?.geometry ?? state.geometry,
+      temperature: params?.temperature ?? state.temperature,
+      field: params?.field ?? state.field,
+      coupling: params?.coupling ?? state.coupling,
+      seed: params?.seed,
+    };
+
+    try {
+      session = SimulationSession.create(initParams);
+      set({ ...syncFromSession(session), running: false });
+    } catch (error) {
+      session = null;
+      set({
+        running: false,
+        initialized: false,
+        error: errorMessage(error),
+      });
+    }
   },
 
   reset: () => {
+    session?.pause();
     set({
       running: false,
-      step: 0,
-      spins: null,
-      energy: null,
-      magnetization: null,
-      acceptanceRate: null,
-      initialized: false,
       error: null,
     });
     get().init();
   },
 
   start: () => {
-    set({ running: true });
-    client?.send({ type: "start", steps_per_tick: 1 });
+    if (!session) {
+      set({ error: SimulationError.notInitialized().message });
+      return;
+    }
+
+    session.start(1);
+    set({ running: true, error: null });
   },
 
   pause: () => {
+    session?.pause();
+    if (session) {
+      set({ ...syncFromSession(session), running: false });
+      return;
+    }
     set({ running: false });
-    client?.send({ type: "pause" });
   },
 
   stepSimulation: (sweeps = 1) => {
-    client?.send({ type: "step", sweeps });
+    if (!session) {
+      set({ error: SimulationError.notInitialized().message });
+      return;
+    }
+
+    try {
+      session.runSweeps(sweeps);
+      set({ ...syncFromSession(session), running: false });
+    } catch (error) {
+      session.pause();
+      set({ running: false, error: errorMessage(error) });
+    }
+  },
+
+  tick: () => {
+    if (!session || !get().running) {
+      return;
+    }
+
+    try {
+      session.runSweeps(session.getSweepsPerTick());
+      const synced = syncFromSession(session);
+      set({
+        spins: synced.spins,
+        step: synced.step,
+        energy: synced.energy,
+        magnetization: synced.magnetization,
+        acceptanceRate: synced.acceptanceRate,
+        error: null,
+      });
+    } catch (error) {
+      session.pause();
+      set({ running: false, error: errorMessage(error) });
+    }
   },
 
   setTemperature: (temperature) => {
     set({ temperature });
-    client?.send({ type: "set_params", temperature });
+    if (!session) {
+      return;
+    }
+
+    try {
+      session.setParams({ temperature });
+      set(syncFromSession(session));
+    } catch (error) {
+      set({ error: errorMessage(error) });
+    }
   },
 
   setField: (field) => {
     set({ field });
-    client?.send({ type: "set_params", field });
+    if (!session) {
+      return;
+    }
+
+    try {
+      session.setParams({ field });
+      set(syncFromSession(session));
+    } catch (error) {
+      set({ error: errorMessage(error) });
+    }
   },
 
   setCoupling: (coupling) => {
     set({ coupling });
-    client?.send({ type: "set_params", coupling });
+    if (!session) {
+      return;
+    }
+
+    try {
+      session.setParams({ coupling });
+      set(syncFromSession(session));
+    } catch (error) {
+      set({ error: errorMessage(error) });
+    }
   },
 
   setGeometry: (geometry) => {
@@ -164,45 +238,8 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   setHeight: (height) => {
     set({ height: clampLatticeSize(height, get().height) });
   },
-
-  applyServerMessage: (message) => {
-    switch (message.type) {
-      case "ready":
-        if (!get().initialized) {
-          get().init();
-        }
-        break;
-      case "state":
-        set({
-          spins: message.spins,
-          width: message.width,
-          height: message.height,
-          step: message.step,
-          geometry: isGeometryName(message.geometry)
-            ? message.geometry
-            : get().geometry,
-          initialized: true,
-          error: null,
-        });
-        break;
-      case "metrics":
-        set({
-          energy: message.energy,
-          magnetization: message.magnetization,
-          acceptanceRate: message.acceptance_rate,
-          temperature: message.temperature,
-          field: message.field,
-          coupling: message.coupling,
-        });
-        break;
-      case "error":
-        set({ error: message.message, running: false });
-        break;
-    }
-  },
 }));
 
-export function resetSimulationClientForTests(): void {
-  client?.disconnect();
-  client = null;
+export function resetSimulationEngineForTests(): void {
+  session = null;
 }
