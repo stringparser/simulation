@@ -1,3 +1,5 @@
+import type { ColorPalette } from "../../config/colors";
+import { colorForAlignedNeighbors, DEFAULT_COLOR_PALETTE } from "../../config/colors";
 import type { GeometryDefinition, GeometryInstance, LayoutGeometry } from "./types";
 
 export class GeometryInstanceImpl implements GeometryInstance {
@@ -33,5 +35,20 @@ export class GeometryInstanceImpl implements GeometryInstance {
 
   maxNeighbors(): number {
     return this.definition.maxNeighbors(this.dimensions);
+  }
+
+  alignedNeighborCount(site: number, spins: number[] | Int8Array): number {
+    const spin = spins[site];
+    return this.core.neighbors(site).filter((neighbor) => spins[neighbor] === spin).length;
+  }
+
+  colorForSite(
+    site: number,
+    spins: number[] | Int8Array,
+    palette: ColorPalette = DEFAULT_COLOR_PALETTE,
+  ): string {
+    const aligned = this.alignedNeighborCount(site, spins);
+    const geometricNeighbors = this.core.neighbors(site).length;
+    return colorForAlignedNeighbors(aligned, geometricNeighbors, palette);
   }
 }

@@ -2,7 +2,7 @@
 
 Track refactor work to centralize lattice topology, configuration, validation, and visualization helpers behind a single **GeometryOrchestrator** API. Enables 3D geometries later without scattering changes across store, session, config, and rendering.
 
-**Status:** Phase 1 complete  
+**Status:** Phase 2 complete  
 **Branch target:** `cursor/ising-sim-plan` (or follow-up branch)  
 **Prerequisite:** Browser-only app at `ising-sim/` root (flatten complete)
 
@@ -370,7 +370,7 @@ function latticeHeight(state) { return state.dimensions[1]; }
 ## Checklist (update as you go)
 
 - [x] Phase 1 — Orchestrator + session
-- [ ] Phase 2 — Unified coloring
+- [x] Phase 2 — Unified coloring
 - [ ] Phase 3 — Store + snapshot renderer
 - [ ] Phase 4 — 3D + slices
 - [ ] Phase 5 — Docs + cleanup

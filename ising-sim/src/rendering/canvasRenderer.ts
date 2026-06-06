@@ -1,5 +1,5 @@
 import { LATTICE_COLORS } from "../config/colors";
-import { colorForSite } from "./neighborColors";
+import { GeometryOrchestrator } from "../sim/geometry/orchestrator";
 import type { CanvasRendererOptions, LatticeRenderer } from "./types";
 
 const DEFAULT_COLD_COLOR = LATTICE_COLORS.cold;
@@ -40,28 +40,25 @@ export function createCanvasRenderer(
         return;
       }
 
+      const layout = GeometryOrchestrator.create(geometry, [width, height]);
+      const palette = {
+        cold: coldColor,
+        hot: hotColor,
+        none: LATTICE_COLORS.none,
+      };
+
       canvas.width = width * cellSize;
       canvas.height = height * cellSize;
 
-      for (let y = 0; y < height; y += 1) {
-        for (let x = 0; x < width; x += 1) {
-          context.fillStyle = colorForSite(
-            x,
-            y,
-            width,
-            height,
-            geometry,
-            spins,
-            coldColor,
-            hotColor,
-          );
-          context.fillRect(
-            x * cellSize + padding,
-            y * cellSize + padding,
-            cellSize - padding * 2,
-            cellSize - padding * 2,
-          );
-        }
+      for (let site = 0; site < layout.numSites(); site += 1) {
+        const [x, y] = layout.indexToCoord(site);
+        context.fillStyle = layout.colorForSite(site, spins, palette);
+        context.fillRect(
+          x * cellSize + padding,
+          y * cellSize + padding,
+          cellSize - padding * 2,
+          cellSize - padding * 2,
+        );
       }
     },
   };

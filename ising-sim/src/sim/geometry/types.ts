@@ -1,6 +1,5 @@
 import type { GeometryName } from "../../config/geometries";
-
-/** Minimal topology surface used by Metropolis, metrics, and interaction. */
+import type { ColorPalette } from "../../config/colors";
 export interface Geometry {
   numSites(): number;
   neighbors(site: number): readonly number[];
@@ -36,4 +35,10 @@ export interface GeometryInstance {
   indexToCoord(site: number): readonly number[];
   coordToIndex(coord: readonly number[]): number | null;
   maxNeighbors(): number;
+  alignedNeighborCount(site: number, spins: number[] | Int8Array): number;
+  colorForSite(
+    site: number,
+    spins: number[] | Int8Array,
+    palette?: ColorPalette,
+  ): string;
 }
