@@ -41,7 +41,7 @@ The simulation runs entirely in the browser. Use **Start** to run continuously, 
 
 | Variable | Default | Used by |
 |----------|---------|---------|
-| `FRONTEND_PORT` | `5173` | Vite dev server port |
+| `PORT` | `5173` | Vite dev server port |
 
 ## Architecture
 
@@ -106,18 +106,18 @@ ising-sim/
 ├── Makefile              # setup, dev, test, build
 ├── README.md             # this file
 ├── PLAN.md               # original design document
-└── frontend/
-    ├── package.json
-    ├── vite.config.ts
-    └── src/
-        ├── App.tsx
-        ├── hooks/useSimulationLoop.ts
-        ├── store/simulationStore.ts
-        ├── sim/                  # Monte Carlo engine (ported from Rust)
-        ├── config/               # lattice bounds, geometry options
-        ├── rendering/            # LatticeRenderer + canvas impl
-        ├── components/           # LatticeView, Controls, Metrics
-        └── __tests__/
+├── package.json
+├── vite.config.ts
+├── tsconfig.json
+└── src/
+    ├── App.tsx
+    ├── hooks/useSimulationLoop.ts
+    ├── store/simulationStore.ts
+    ├── sim/                  # Monte Carlo engine
+    ├── config/               # lattice bounds, geometry options
+    ├── rendering/            # canvas renderer
+    ├── components/           # LatticeView, Controls, Metrics
+    └── __tests__/
 ```
 
 ## Frontend modules
@@ -135,7 +135,6 @@ ising-sim/
 ## Development
 
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
@@ -149,7 +148,7 @@ make test
 Run individually:
 
 ```bash
-cd frontend && npm test
+npm test
 ```
 
 The `sim/` package includes unit tests for geometry, Metropolis updates, metrics, and session lifecycle.
