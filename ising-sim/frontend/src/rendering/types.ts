@@ -9,7 +9,6 @@ export interface LatticeRenderer {
     height: number,
     geometry: GeometryName,
   ): void;
-  resize?(width: number, height: number): void;
 }
 
 export interface CanvasRendererOptions {

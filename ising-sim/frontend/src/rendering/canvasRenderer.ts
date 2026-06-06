@@ -1,8 +1,9 @@
+import { LATTICE_COLORS } from "../config/colors";
 import { colorForSite } from "./neighborColors";
 import type { CanvasRendererOptions, LatticeRenderer } from "./types";
 
-const DEFAULT_COLD_COLOR = "#4dabf7";
-const DEFAULT_HOT_COLOR = "#ff6b35";
+const DEFAULT_COLD_COLOR = LATTICE_COLORS.cold;
+const DEFAULT_HOT_COLOR = LATTICE_COLORS.hot;
 const DEFAULT_CELL_SIZE = 18;
 const DEFAULT_PADDING = 1;
 

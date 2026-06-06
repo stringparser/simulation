@@ -1,5 +1,11 @@
 import { create } from "zustand";
+import {
+  DEFAULT_GEOMETRY,
+  type GeometryName,
+  isGeometryName,
+} from "../config/geometries";
 import { clampLatticeSize, LATTICE_SIZE } from "../config/lattice";
+import { SIMULATION_DEFAULTS } from "../config/simulationParams";
 import { SimulationClient } from "../api/websocket";
 import type {
   ConnectionStatus,
@@ -9,9 +15,6 @@ import type {
 
 const DEFAULT_WIDTH = LATTICE_SIZE.defaultWidth;
 const DEFAULT_HEIGHT = LATTICE_SIZE.defaultHeight;
-const DEFAULT_TEMPERATURE = 2.5;
-const DEFAULT_FIELD = 0;
-const DEFAULT_COUPLING = 1;
 
 export interface SimulationStore {
   connectionStatus: ConnectionStatus;
@@ -22,7 +25,7 @@ export interface SimulationStore {
   temperature: number;
   field: number;
   coupling: number;
-  geometry: string;
+  geometry: GeometryName;
   running: boolean;
   step: number;
   energy: number | null;
@@ -39,7 +42,7 @@ export interface SimulationStore {
   setTemperature: (temperature: number) => void;
   setField: (field: number) => void;
   setCoupling: (coupling: number) => void;
-  setGeometry: (geometry: string) => void;
+  setGeometry: (geometry: GeometryName) => void;
   setWidth: (width: number) => void;
   setHeight: (height: number) => void;
   applyServerMessage: (message: ServerMessage) => void;
@@ -72,10 +75,10 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   spins: null,
   width: DEFAULT_WIDTH,
   height: DEFAULT_HEIGHT,
-  temperature: DEFAULT_TEMPERATURE,
-  field: DEFAULT_FIELD,
-  coupling: DEFAULT_COUPLING,
-  geometry: "square_2d_open",
+  temperature: SIMULATION_DEFAULTS.temperature,
+  field: SIMULATION_DEFAULTS.field,
+  coupling: SIMULATION_DEFAULTS.coupling,
+  geometry: DEFAULT_GEOMETRY,
   running: false,
   step: 0,
   energy: null,
@@ -155,11 +158,11 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   },
 
   setWidth: (width) => {
-    set({ width: clampLatticeSize(width) });
+    set({ width: clampLatticeSize(width, get().width) });
   },
 
   setHeight: (height) => {
-    set({ height: clampLatticeSize(height) });
+    set({ height: clampLatticeSize(height, get().height) });
   },
 
   applyServerMessage: (message) => {
@@ -175,7 +178,9 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
           width: message.width,
           height: message.height,
           step: message.step,
-          geometry: message.geometry,
+          geometry: isGeometryName(message.geometry)
+            ? message.geometry
+            : get().geometry,
           initialized: true,
           error: null,
         });

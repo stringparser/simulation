@@ -1,3 +1,5 @@
+import { formatFixed } from "../utils/format";
+
 interface SliderControlProps {
   label: string;
   value: number;
@@ -16,15 +18,15 @@ export function SliderControl({
   max,
   step,
   disabled = false,
-  formatValue = (current) => current.toFixed(1),
+  formatValue = formatFixed,
   onChange,
 }: SliderControlProps) {
   return (
-    <label className="slider-control">
-      <span className="slider-control__label">{label}</span>
+    <label className="control">
+      <span className="control__label">{label}</span>
       <div className="slider-control__row">
         <input
-          className="slider-control__input"
+          className="control__input slider-control__input"
           type="range"
           min={min}
           max={max}

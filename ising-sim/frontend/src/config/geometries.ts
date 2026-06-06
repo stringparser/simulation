@@ -4,3 +4,13 @@ export const GEOMETRY_OPTIONS = [
 ] as const;
 
 export type GeometryName = (typeof GEOMETRY_OPTIONS)[number]["value"];
+
+export const DEFAULT_GEOMETRY: GeometryName = "square_2d_open";
+
+export function isGeometryName(value: string): value is GeometryName {
+  return GEOMETRY_OPTIONS.some((option) => option.value === value);
+}
+
+export function geometryLabel(name: GeometryName | string): string {
+  return GEOMETRY_OPTIONS.find((option) => option.value === name)?.label ?? name;
+}

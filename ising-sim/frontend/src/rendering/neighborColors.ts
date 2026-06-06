@@ -1,8 +1,9 @@
+import { LATTICE_COLORS } from "../config/colors";
 import type { GeometryName } from "../config/geometries";
 
-const DEFAULT_COLD_COLOR = "#4dabf7";
-const DEFAULT_HOT_COLOR = "#ff6b35";
-const NO_MAGNETIZATION_COLOR = "#212529";
+const DEFAULT_COLD_COLOR = LATTICE_COLORS.cold;
+const DEFAULT_HOT_COLOR = LATTICE_COLORS.hot;
+const NO_MAGNETIZATION_COLOR = LATTICE_COLORS.none;
 
 interface Rgb {
   r: number;
@@ -103,8 +104,8 @@ export function alignedNeighborCount(
 export function colorForAlignedNeighbors(
   aligned: number,
   maxNeighbors: number,
-  coldColor = DEFAULT_COLD_COLOR,
-  hotColor = DEFAULT_HOT_COLOR,
+  coldColor: string = DEFAULT_COLD_COLOR,
+  hotColor: string = DEFAULT_HOT_COLOR,
 ): string {
   if (aligned === 0) {
     return NO_MAGNETIZATION_COLOR;
@@ -125,8 +126,8 @@ export function colorForSite(
   height: number,
   geometry: GeometryName,
   spins: number[] | Int8Array,
-  coldColor = DEFAULT_COLD_COLOR,
-  hotColor = DEFAULT_HOT_COLOR,
+  coldColor: string = DEFAULT_COLD_COLOR,
+  hotColor: string = DEFAULT_HOT_COLOR,
 ): string {
   const maxNeighbors = neighborCount(x, y, width, height, geometry);
   const aligned = alignedNeighborCount(x, y, width, height, geometry, spins);

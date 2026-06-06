@@ -1,50 +1,32 @@
-import { GEOMETRY_OPTIONS } from "../config/geometries";
-import { useSimulationStore } from "../store/simulationStore";
-
-function geometryLabel(name: string): string {
-  return GEOMETRY_OPTIONS.find((option) => option.value === name)?.label ?? name;
-}
-
-function formatNumber(value: number | null, digits = 2): string {
-  return value === null ? "—" : value.toFixed(digits);
-}
+import { geometryLabel } from "../config/geometries";
+import { useMetricsPanelState } from "../store/selectors";
+import { formatNumber } from "../utils/format";
+import { MetricRow } from "./MetricRow";
+import { PanelSection } from "./PanelSection";
 
 export function MetricsPanel() {
-  const step = useSimulationStore((state) => state.step);
-  const energy = useSimulationStore((state) => state.energy);
-  const magnetization = useSimulationStore((state) => state.magnetization);
-  const acceptanceRate = useSimulationStore((state) => state.acceptanceRate);
-  const geometry = useSimulationStore((state) => state.geometry);
-  const width = useSimulationStore((state) => state.width);
-  const height = useSimulationStore((state) => state.height);
+  const {
+    step,
+    energy,
+    magnetization,
+    acceptanceRate,
+    geometry,
+    width,
+    height,
+  } = useMetricsPanelState();
 
   return (
-    <section className="metrics-panel">
-      <h2 className="side-panel__heading">Metrics</h2>
+    <PanelSection title="Metrics" className="metrics-panel">
       <dl className="metrics-panel__list">
-        <div>
-          <dt>Geometry</dt>
-          <dd>
-            {geometryLabel(geometry)} ({width}×{height})
-          </dd>
-        </div>
-        <div>
-          <dt>Step</dt>
-          <dd>{step}</dd>
-        </div>
-        <div>
-          <dt>Energy</dt>
-          <dd>{formatNumber(energy, 4)}</dd>
-        </div>
-        <div>
-          <dt>Magnetization</dt>
-          <dd>{formatNumber(magnetization, 1)}</dd>
-        </div>
-        <div>
-          <dt>Acceptance</dt>
-          <dd>{formatNumber(acceptanceRate, 3)}</dd>
-        </div>
+        <MetricRow
+          label="Geometry"
+          value={`${geometryLabel(geometry)} (${width}×${height})`}
+        />
+        <MetricRow label="Step" value={step} />
+        <MetricRow label="Energy" value={formatNumber(energy, 4)} />
+        <MetricRow label="Magnetization" value={formatNumber(magnetization, 1)} />
+        <MetricRow label="Acceptance" value={formatNumber(acceptanceRate, 3)} />
       </dl>
-    </section>
+    </PanelSection>
   );
 }

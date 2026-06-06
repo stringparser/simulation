@@ -5,7 +5,14 @@ export const LATTICE_SIZE = {
   defaultHeight: 16,
 } as const;
 
-export function clampLatticeSize(value: number): number {
+export function clampLatticeSize(
+  value: number,
+  fallback: number = LATTICE_SIZE.defaultWidth,
+): number {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+
   return Math.min(LATTICE_SIZE.max, Math.max(LATTICE_SIZE.min, Math.round(value)));
 }
 

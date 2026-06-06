@@ -1,8 +1,7 @@
-import { useSimulationStore } from "../store/simulationStore";
+import { useConnectionState } from "../store/selectors";
 
 export function ConnectionBanner() {
-  const connectionStatus = useSimulationStore((state) => state.connectionStatus);
-  const error = useSimulationStore((state) => state.error);
+  const { connectionStatus, error } = useConnectionState();
 
   const statusLabel = {
     disconnected: "Backend disconnected",

@@ -1,44 +1,50 @@
-import { GEOMETRY_OPTIONS } from "../config/geometries";
+import { GEOMETRY_OPTIONS, isGeometryName } from "../config/geometries";
 import { LATTICE_SIZE } from "../config/lattice";
-import { useSimulationStore } from "../store/simulationStore";
+import { SLIDER_PARAMS } from "../config/simulationParams";
+import { deriveControlLocks, useControlsPanelState } from "../store/selectors";
+import { FieldControl } from "./FieldControl";
+import { PanelSection } from "./PanelSection";
 import { SliderControl } from "./SliderControl";
 
 export function ControlsPanel() {
-  const connectionStatus = useSimulationStore((state) => state.connectionStatus);
-  const running = useSimulationStore((state) => state.running);
-  const initialized = useSimulationStore((state) => state.initialized);
-  const temperature = useSimulationStore((state) => state.temperature);
-  const field = useSimulationStore((state) => state.field);
-  const coupling = useSimulationStore((state) => state.coupling);
-  const geometry = useSimulationStore((state) => state.geometry);
-  const width = useSimulationStore((state) => state.width);
-  const height = useSimulationStore((state) => state.height);
-  const start = useSimulationStore((state) => state.start);
-  const pause = useSimulationStore((state) => state.pause);
-  const stepSimulation = useSimulationStore((state) => state.stepSimulation);
-  const reset = useSimulationStore((state) => state.reset);
-  const setTemperature = useSimulationStore((state) => state.setTemperature);
-  const setField = useSimulationStore((state) => state.setField);
-  const setCoupling = useSimulationStore((state) => state.setCoupling);
-  const setGeometry = useSimulationStore((state) => state.setGeometry);
-  const setWidth = useSimulationStore((state) => state.setWidth);
-  const setHeight = useSimulationStore((state) => state.setHeight);
+  const {
+    connectionStatus,
+    running,
+    initialized,
+    temperature,
+    field,
+    coupling,
+    geometry,
+    width,
+    height,
+    start,
+    pause,
+    stepSimulation,
+    reset,
+    setTemperature,
+    setField,
+    setCoupling,
+    setGeometry,
+    setWidth,
+    setHeight,
+  } = useControlsPanelState();
 
-  const disabled = connectionStatus !== "connected";
-  const initLocked = disabled || running;
-  const paramsLocked = disabled || !initialized;
+  const { initLocked, paramsLocked, canStart, canPause, canStep, disabled } =
+    deriveControlLocks(connectionStatus, running, initialized);
 
   return (
-    <section className="controls-panel">
-      <h2 className="side-panel__heading">Controls</h2>
-
-      <label className="field-control">
-        <span className="field-control__label">Geometry</span>
+    <PanelSection title="Controls" className="controls-panel">
+      <FieldControl label="Geometry">
         <select
-          className="field-control__input"
+          className="control__input"
           value={geometry}
           disabled={initLocked}
-          onChange={(event) => setGeometry(event.target.value)}
+          onChange={(event) => {
+            const value = event.target.value;
+            if (isGeometryName(value)) {
+              setGeometry(value);
+            }
+          }}
         >
           {GEOMETRY_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -46,13 +52,12 @@ export function ControlsPanel() {
             </option>
           ))}
         </select>
-      </label>
+      </FieldControl>
 
       <div className="controls-panel__size-row">
-        <label className="field-control">
-          <span className="field-control__label">Width</span>
+        <FieldControl label="Width">
           <input
-            className="field-control__input"
+            className="control__input"
             type="number"
             min={LATTICE_SIZE.min}
             max={LATTICE_SIZE.max}
@@ -60,11 +65,10 @@ export function ControlsPanel() {
             disabled={initLocked}
             onChange={(event) => setWidth(Number(event.target.value))}
           />
-        </label>
-        <label className="field-control">
-          <span className="field-control__label">Height</span>
+        </FieldControl>
+        <FieldControl label="Height">
           <input
-            className="field-control__input"
+            className="control__input"
             type="number"
             min={LATTICE_SIZE.min}
             max={LATTICE_SIZE.max}
@@ -72,7 +76,7 @@ export function ControlsPanel() {
             disabled={initLocked}
             onChange={(event) => setHeight(Number(event.target.value))}
           />
-        </label>
+        </FieldControl>
       </div>
 
       <p className="controls-panel__hint">
@@ -80,53 +84,49 @@ export function ControlsPanel() {
       </p>
 
       <SliderControl
-        label="Temperature"
-        min={0.5}
-        max={5}
-        step={0.1}
+        label={SLIDER_PARAMS.temperature.label}
+        min={SLIDER_PARAMS.temperature.min}
+        max={SLIDER_PARAMS.temperature.max}
+        step={SLIDER_PARAMS.temperature.step}
         value={temperature}
         disabled={paramsLocked}
         onChange={setTemperature}
       />
 
       <SliderControl
-        label="Field h"
-        min={-2}
-        max={2}
-        step={0.1}
+        label={SLIDER_PARAMS.field.label}
+        min={SLIDER_PARAMS.field.min}
+        max={SLIDER_PARAMS.field.max}
+        step={SLIDER_PARAMS.field.step}
         value={field}
         disabled={paramsLocked}
         onChange={setField}
       />
 
       <SliderControl
-        label="Coupling J"
-        min={0.1}
-        max={2}
-        step={0.1}
+        label={SLIDER_PARAMS.coupling.label}
+        min={SLIDER_PARAMS.coupling.min}
+        max={SLIDER_PARAMS.coupling.max}
+        step={SLIDER_PARAMS.coupling.step}
         value={coupling}
         disabled={paramsLocked}
         onChange={setCoupling}
       />
 
       <div className="controls-panel__actions">
-        <button type="button" disabled={disabled || !initialized || running} onClick={start}>
+        <button type="button" className="btn" disabled={!canStart} onClick={start}>
           Start
         </button>
-        <button type="button" disabled={disabled || !initialized || !running} onClick={pause}>
+        <button type="button" className="btn" disabled={!canPause} onClick={pause}>
           Pause
         </button>
-        <button
-          type="button"
-          disabled={disabled || !initialized || running}
-          onClick={() => stepSimulation(1)}
-        >
+        <button type="button" className="btn" disabled={!canStep} onClick={() => stepSimulation(1)}>
           Step
         </button>
-        <button type="button" disabled={disabled} onClick={reset}>
+        <button type="button" className="btn" disabled={disabled} onClick={reset}>
           Reset
         </button>
       </div>
-    </section>
+    </PanelSection>
   );
 }
