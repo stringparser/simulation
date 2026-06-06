@@ -9,6 +9,7 @@ export function LatticeView() {
   const spins = useSimulationStore((state) => state.spins);
   const width = useSimulationStore((state) => state.width);
   const height = useSimulationStore((state) => state.height);
+  const geometry = useSimulationStore((state) => state.geometry);
   const initialized = useSimulationStore((state) => state.initialized);
 
   useEffect(() => {
@@ -28,9 +29,9 @@ export function LatticeView() {
 
   useEffect(() => {
     if (spins && rendererRef.current) {
-      rendererRef.current.draw(spins, width, height);
+      rendererRef.current.draw(spins, width, height, geometry);
     }
-  }, [spins, width, height]);
+  }, [spins, width, height, geometry]);
 
   return (
     <div className="lattice-area">

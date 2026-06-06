@@ -1,12 +1,14 @@
 import { createCanvasRenderer } from "../rendering/canvasRenderer";
 
 describe("createCanvasRenderer", () => {
-  it("draws spin colors to the canvas", () => {
+  it("colors cells by neighbor count", () => {
     const container = document.createElement("div");
-    const fillRect = jest.fn();
+    const colors: string[] = [];
     const context = {
       fillStyle: "",
-      fillRect,
+      fillRect: jest.fn(() => {
+        colors.push(context.fillStyle);
+      }),
     };
 
     jest.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
@@ -15,9 +17,15 @@ describe("createCanvasRenderer", () => {
 
     const renderer = createCanvasRenderer({ cellSize: 10, padding: 0 });
     renderer.mount(container);
-    renderer.draw([1, -1, -1, 1], 2, 2);
+    renderer.draw(
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      4,
+      4,
+      "square_2d_open",
+    );
 
-    expect(fillRect).toHaveBeenCalledTimes(4);
-    expect(context.fillStyle).toMatch(/#[0-9a-f]{6}/i);
+    expect(context.fillRect).toHaveBeenCalledTimes(16);
+    expect(colors[0]).toBe("#ff6b35");
+    expect(colors[5]).toBe("#ff6b35");
   });
 });

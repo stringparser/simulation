@@ -1,15 +1,16 @@
+import { colorForSite } from "./neighborColors";
 import type { CanvasRendererOptions, LatticeRenderer } from "./types";
 
-const DEFAULT_UP_COLOR = "#4dabf7";
-const DEFAULT_DOWN_COLOR = "#212529";
+const DEFAULT_COLD_COLOR = "#4dabf7";
+const DEFAULT_HOT_COLOR = "#ff6b35";
 const DEFAULT_CELL_SIZE = 18;
 const DEFAULT_PADDING = 1;
 
 export function createCanvasRenderer(
   options: CanvasRendererOptions = {},
 ): LatticeRenderer {
-  const upColor = options.upColor ?? DEFAULT_UP_COLOR;
-  const downColor = options.downColor ?? DEFAULT_DOWN_COLOR;
+  const coldColor = options.coldColor ?? DEFAULT_COLD_COLOR;
+  const hotColor = options.hotColor ?? DEFAULT_HOT_COLOR;
   const cellSize = options.cellSize ?? DEFAULT_CELL_SIZE;
   const padding = options.padding ?? DEFAULT_PADDING;
 
@@ -33,7 +34,7 @@ export function createCanvasRenderer(
       context = null;
     },
 
-    draw(spins, width, height) {
+    draw(spins, width, height, geometry) {
       if (!canvas || !context) {
         return;
       }
@@ -43,8 +44,16 @@ export function createCanvasRenderer(
 
       for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
-          const spin = spins[y * width + x];
-          context.fillStyle = spin >= 0 ? upColor : downColor;
+          context.fillStyle = colorForSite(
+            x,
+            y,
+            width,
+            height,
+            geometry,
+            spins,
+            coldColor,
+            hotColor,
+          );
           context.fillRect(
             x * cellSize + padding,
             y * cellSize + padding,
