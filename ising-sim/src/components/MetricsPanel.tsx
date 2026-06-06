@@ -1,6 +1,6 @@
 import { geometryLabel } from "../config/geometries";
 import { useMetricsPanelState } from "../store/selectors";
-import { formatNumber } from "../utils/format";
+import { formatDimensions, formatNumber } from "../utils/format";
 import { MetricRow } from "./MetricRow";
 import { PanelSection } from "./PanelSection";
 import { Sparkline } from "./Sparkline";
@@ -14,8 +14,7 @@ export function MetricsPanel() {
     energyHistory,
     magnetizationHistory,
     geometry,
-    width,
-    height,
+    dimensions,
   } = useMetricsPanelState();
 
   return (
@@ -23,7 +22,7 @@ export function MetricsPanel() {
       <dl className="metrics-panel__list">
         <MetricRow
           label="Geometry"
-          value={`${geometryLabel(geometry)} (${width}×${height})`}
+          value={`${geometryLabel(geometry)} (${formatDimensions(dimensions)})`}
         />
         <MetricRow label="Step" value={step} />
         <MetricRow label="Energy" value={formatNumber(energy, 4)} />

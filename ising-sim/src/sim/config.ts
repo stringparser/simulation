@@ -1,11 +1,11 @@
 import { DEFAULT_GEOMETRY, type GeometryName, isGeometryName } from "../config/geometries";
-import { LATTICE_SIZE } from "../config/lattice";
+import { LATTICE_SIZE, validateDimensions } from "../config/lattice";
 import { SIMULATION_DEFAULTS } from "../config/simulationParams";
 import { SimulationError } from "./errors";
+import { GeometryOrchestrator } from "./geometry/orchestrator";
 
 export interface SimConfig {
-  width: number;
-  height: number;
+  dimensions: readonly number[];
   temperature: number;
   field: number;
   coupling: number;
@@ -14,6 +14,7 @@ export interface SimConfig {
 }
 
 export interface SimInitParams {
+  dimensions?: readonly number[];
   width?: number;
   height?: number;
   geometry?: string;
@@ -24,8 +25,7 @@ export interface SimInitParams {
 }
 
 export const DEFAULT_SIM_CONFIG: SimConfig = {
-  width: LATTICE_SIZE.defaultWidth,
-  height: LATTICE_SIZE.defaultHeight,
+  dimensions: GeometryOrchestrator.defaultDimensions(DEFAULT_GEOMETRY),
   temperature: SIMULATION_DEFAULTS.temperature,
   field: SIMULATION_DEFAULTS.field,
   coupling: SIMULATION_DEFAULTS.coupling,
@@ -37,27 +37,10 @@ export function beta(config: SimConfig): number {
 }
 
 export function validateLatticeSize(width: number, height: number): void {
-  const valid =
-    width >= LATTICE_SIZE.min &&
-    height >= LATTICE_SIZE.min &&
-    width <= LATTICE_SIZE.max &&
-    height <= LATTICE_SIZE.max;
-
-  if (!valid) {
-    throw SimulationError.invalidLatticeSize(width, height);
-  }
+  validateDimensions([width, height]);
 }
 
 export function initParamsToConfig(params: SimInitParams = {}): SimConfig {
-  const width = params.width ?? LATTICE_SIZE.defaultWidth;
-  const height = params.height ?? LATTICE_SIZE.defaultHeight;
-  validateLatticeSize(width, height);
-
-  const temperature = params.temperature ?? SIMULATION_DEFAULTS.temperature;
-  if (temperature <= 0) {
-    throw SimulationError.invalidTemperature();
-  }
-
   let geometry: GeometryName = DEFAULT_GEOMETRY;
   if (params.geometry !== undefined) {
     if (!isGeometryName(params.geometry)) {
@@ -66,9 +49,22 @@ export function initParamsToConfig(params: SimInitParams = {}): SimConfig {
     geometry = params.geometry;
   }
 
+  const dimensions =
+    params.dimensions ??
+    [
+      params.width ?? LATTICE_SIZE.defaultWidth,
+      params.height ?? LATTICE_SIZE.defaultHeight,
+    ];
+
+  GeometryOrchestrator.validate(geometry, dimensions);
+
+  const temperature = params.temperature ?? SIMULATION_DEFAULTS.temperature;
+  if (temperature <= 0) {
+    throw SimulationError.invalidTemperature();
+  }
+
   return {
-    width,
-    height,
+    dimensions,
     temperature,
     field: params.field ?? SIMULATION_DEFAULTS.field,
     coupling: params.coupling ?? SIMULATION_DEFAULTS.coupling,

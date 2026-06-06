@@ -17,12 +17,14 @@ describe("createCanvasRenderer", () => {
 
     const renderer = createCanvasRenderer({ cellSize: 10, padding: 0 });
     renderer.mount(container);
-    renderer.draw(
-      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-      4,
-      4,
-      "square_2d_open",
-    );
+    renderer.draw({
+      spins: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      dimensions: [4, 4],
+      rank: 2,
+      maxNeighbors: 4,
+      step: 0,
+      geometry: "square_2d_open",
+    });
 
     expect(context.fillRect).toHaveBeenCalledTimes(16);
     expect(colors[0]).toBe("#ff6b35");

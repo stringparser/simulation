@@ -7,8 +7,6 @@ describe("SimulationSession", () => {
     const session = SimulationSession.create();
     const snapshot = session.getSnapshot();
 
-    expect(snapshot.width).toBe(LATTICE_SIZE.defaultWidth);
-    expect(snapshot.height).toBe(LATTICE_SIZE.defaultHeight);
     expect(snapshot.dimensions).toEqual([
       LATTICE_SIZE.defaultWidth,
       LATTICE_SIZE.defaultHeight,
@@ -16,7 +14,9 @@ describe("SimulationSession", () => {
     expect(snapshot.rank).toBe(2);
     expect(snapshot.maxNeighbors).toBe(4);
     expect(snapshot.step).toBe(0);
-    expect(snapshot.spins).toHaveLength(snapshot.width * snapshot.height);
+    expect(snapshot.spins).toHaveLength(
+      snapshot.dimensions[0] * snapshot.dimensions[1],
+    );
   });
 
   it("accepts custom lattice size and periodic geometry", () => {
@@ -28,8 +28,7 @@ describe("SimulationSession", () => {
     });
     const snapshot = session.getSnapshot();
 
-    expect(snapshot.width).toBe(8);
-    expect(snapshot.height).toBe(12);
+    expect(snapshot.dimensions).toEqual([8, 12]);
     expect(snapshot.geometry).toBe("square_2d_periodic");
   });
 

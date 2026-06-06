@@ -1,6 +1,7 @@
 import { GEOMETRY_OPTIONS, isGeometryName } from "../config/geometries";
 import { LATTICE_SIZE } from "../config/lattice";
 import { SLIDER_PARAMS } from "../config/simulationParams";
+import { GeometryOrchestrator } from "../sim/geometry/orchestrator";
 import { deriveControlLocks, useControlsPanelState } from "../store/selectors";
 import { FieldControl } from "./FieldControl";
 import { PanelSection } from "./PanelSection";
@@ -14,8 +15,7 @@ export function ControlsPanel() {
     field,
     coupling,
     geometry,
-    width,
-    height,
+    dimensions,
     error,
     start,
     pause,
@@ -25,12 +25,16 @@ export function ControlsPanel() {
     setField,
     setCoupling,
     setGeometry,
-    setWidth,
-    setHeight,
+    setDimension,
   } = useControlsPanelState();
 
   const { initLocked, paramsLocked, canStart, canPause, canStep } =
     deriveControlLocks(running, initialized);
+
+  const definition = GeometryOrchestrator.listDefinitions().find(
+    (entry) => entry.name === geometry,
+  );
+  const dimensionLabels = definition?.dimensionLabels ?? ["Width", "Height"];
 
   return (
     <PanelSection title="Controls" className="controls-panel">
@@ -57,28 +61,19 @@ export function ControlsPanel() {
       </FieldControl>
 
       <div className="controls-panel__size-row">
-        <FieldControl label="Width">
-          <input
-            className="control__input"
-            type="number"
-            min={LATTICE_SIZE.min}
-            max={LATTICE_SIZE.max}
-            value={width}
-            disabled={initLocked}
-            onChange={(event) => setWidth(Number(event.target.value))}
-          />
-        </FieldControl>
-        <FieldControl label="Height">
-          <input
-            className="control__input"
-            type="number"
-            min={LATTICE_SIZE.min}
-            max={LATTICE_SIZE.max}
-            value={height}
-            disabled={initLocked}
-            onChange={(event) => setHeight(Number(event.target.value))}
-          />
-        </FieldControl>
+        {dimensions.map((value, axis) => (
+          <FieldControl key={dimensionLabels[axis] ?? axis} label={dimensionLabels[axis] ?? `Dim ${axis + 1}`}>
+            <input
+              className="control__input"
+              type="number"
+              min={LATTICE_SIZE.min}
+              max={LATTICE_SIZE.max}
+              value={value}
+              disabled={initLocked}
+              onChange={(event) => setDimension(axis, Number(event.target.value))}
+            />
+          </FieldControl>
+        ))}
       </div>
 
       <p className="controls-panel__hint">

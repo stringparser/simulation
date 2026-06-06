@@ -9,8 +9,9 @@ describe("useSimulationStore", () => {
     useSimulationStore.setState({
       error: null,
       spins: null,
-      width: 16,
-      height: 16,
+      dimensions: [16, 16],
+      rank: 2,
+      maxNeighbors: 4,
       temperature: 2.5,
       field: 0,
       coupling: 1,
@@ -31,6 +32,7 @@ describe("useSimulationStore", () => {
 
     const state = useSimulationStore.getState();
     expect(state.initialized).toBe(true);
+    expect(state.dimensions).toEqual([16, 16]);
     expect(state.spins).toHaveLength(256);
     expect(state.energy).not.toBeNull();
     expect(state.magnetization).not.toBeNull();
@@ -52,6 +54,11 @@ describe("useSimulationStore", () => {
     const state = useSimulationStore.getState();
     expect(state.initialized).toBe(false);
     expect(state.error).toMatch(/lattice size/i);
+  });
+
+  it("updates dimension values before reset", () => {
+    useSimulationStore.getState().setDimension(0, 20);
+    expect(useSimulationStore.getState().dimensions).toEqual([20, 16]);
   });
 
   it("updates step on tick when running", () => {

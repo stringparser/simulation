@@ -10,6 +10,7 @@ describe("ControlsPanel", () => {
       temperature: 2.5,
       field: 0,
       coupling: 1,
+      dimensions: [16, 16],
       error: null,
     });
   });

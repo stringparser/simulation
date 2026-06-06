@@ -3,12 +3,23 @@ import type { GeometryName } from "../config/geometries";
 import { createCanvasRenderer } from "../rendering/canvasRenderer";
 import type { LatticeRenderer } from "../rendering/types";
 
-export function useLatticeRenderer(
-  spins: number[] | null,
-  width: number,
-  height: number,
-  geometry: GeometryName,
-) {
+interface LatticeRenderState {
+  spins: number[] | null;
+  dimensions: readonly number[];
+  rank: number;
+  maxNeighbors: number;
+  step: number;
+  geometry: GeometryName;
+}
+
+export function useLatticeRenderer({
+  spins,
+  dimensions,
+  rank,
+  maxNeighbors,
+  step,
+  geometry,
+}: LatticeRenderState) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<LatticeRenderer | null>(null);
 
@@ -28,10 +39,19 @@ export function useLatticeRenderer(
   }, []);
 
   useEffect(() => {
-    if (spins && rendererRef.current) {
-      rendererRef.current.draw(spins, width, height, geometry);
+    if (!spins || !rendererRef.current) {
+      return;
     }
-  }, [spins, width, height, geometry]);
+
+    rendererRef.current.draw({
+      spins,
+      dimensions,
+      rank,
+      maxNeighbors,
+      step,
+      geometry,
+    });
+  }, [spins, dimensions, rank, maxNeighbors, step, geometry]);
 
   return containerRef;
 }

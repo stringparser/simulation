@@ -10,10 +10,6 @@ import { SeededRng, sessionRngSeed } from "./rng";
 
 export interface SessionSnapshot {
   spins: number[];
-  /** @deprecated Use dimensions[0] */
-  width: number;
-  /** @deprecated Use dimensions[1] */
-  height: number;
   dimensions: readonly number[];
   rank: number;
   maxNeighbors: number;
@@ -56,8 +52,6 @@ export class SimulationSession {
     this.rng = rng;
     this.cachedSnapshot = {
       spins: [],
-      width: layout.dimensions[0],
-      height: layout.dimensions[1],
       dimensions: [...layout.dimensions],
       rank: layout.definition.rank,
       maxNeighbors: layout.maxNeighbors(),
@@ -69,10 +63,7 @@ export class SimulationSession {
 
   static create(params: SimInitParams = {}): SimulationSession {
     const config = initParamsToConfig(params);
-    const layout = GeometryOrchestrator.create(config.geometry, [
-      config.width,
-      config.height,
-    ]);
+    const layout = GeometryOrchestrator.create(config.geometry, config.dimensions);
     const interaction = new NearestNeighbor(config.coupling);
     const lattice = Lattice.create(layout.numSites(), config.seed);
     const rngSeed = sessionRngSeed(config.seed);
@@ -148,8 +139,6 @@ export class SimulationSession {
     this.refreshSnapshot();
     return {
       spins: [...this.cachedSnapshot.spins],
-      width: this.cachedSnapshot.width,
-      height: this.cachedSnapshot.height,
       dimensions: [...this.cachedSnapshot.dimensions],
       rank: this.cachedSnapshot.rank,
       maxNeighbors: this.cachedSnapshot.maxNeighbors,
@@ -172,8 +161,6 @@ export class SimulationSession {
   private refreshSnapshot(): void {
     this.cachedSnapshot.spins = this.lattice.spinsArray();
     this.cachedSnapshot.dimensions = [...this.layout.dimensions];
-    this.cachedSnapshot.width = this.layout.dimensions[0];
-    this.cachedSnapshot.height = this.layout.dimensions[1];
     this.cachedSnapshot.rank = this.layout.definition.rank;
     this.cachedSnapshot.maxNeighbors = this.layout.maxNeighbors();
     this.cachedSnapshot.step = this.step;

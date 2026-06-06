@@ -20,8 +20,7 @@ export function useControlsPanelState() {
       field: state.field,
       coupling: state.coupling,
       geometry: state.geometry,
-      width: state.width,
-      height: state.height,
+      dimensions: state.dimensions,
       error: state.error,
       start: state.start,
       pause: state.pause,
@@ -31,8 +30,7 @@ export function useControlsPanelState() {
       setField: state.setField,
       setCoupling: state.setCoupling,
       setGeometry: state.setGeometry,
-      setWidth: state.setWidth,
-      setHeight: state.setHeight,
+      setDimension: state.setDimension,
     })),
   );
 }
@@ -47,8 +45,7 @@ export function useMetricsPanelState() {
       energyHistory: state.energyHistory,
       magnetizationHistory: state.magnetizationHistory,
       geometry: state.geometry,
-      width: state.width,
-      height: state.height,
+      dimensions: state.dimensions,
     })),
   );
 }
@@ -56,11 +53,13 @@ export function useMetricsPanelState() {
 export function useLatticeViewState() {
   return useSimulationStore(
     useShallow((state) => ({
-      spins: state.spins,
-      width: state.width,
-      height: state.height,
-      geometry: state.geometry,
       initialized: state.initialized,
+      spins: state.spins,
+      dimensions: state.dimensions,
+      rank: state.rank,
+      maxNeighbors: state.maxNeighbors,
+      step: state.step,
+      geometry: state.geometry,
     })),
   );
 }

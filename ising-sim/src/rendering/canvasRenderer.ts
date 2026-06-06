@@ -1,5 +1,6 @@
 import { LATTICE_COLORS } from "../config/colors";
 import { GeometryOrchestrator } from "../sim/geometry/orchestrator";
+import type { SessionSnapshot } from "../sim/session";
 import type { CanvasRendererOptions, LatticeRenderer } from "./types";
 
 const DEFAULT_COLD_COLOR = LATTICE_COLORS.cold;
@@ -35,24 +36,25 @@ export function createCanvasRenderer(
       context = null;
     },
 
-    draw(spins, width, height, geometry) {
-      if (!canvas || !context) {
+    draw(snapshot: SessionSnapshot) {
+      if (!canvas || !context || snapshot.rank !== 2) {
         return;
       }
 
-      const layout = GeometryOrchestrator.create(geometry, [width, height]);
+      const layout = GeometryOrchestrator.createFromSnapshot(snapshot);
       const palette = {
         cold: coldColor,
         hot: hotColor,
         none: LATTICE_COLORS.none,
       };
+      const [width, height] = snapshot.dimensions;
 
       canvas.width = width * cellSize;
       canvas.height = height * cellSize;
 
       for (let site = 0; site < layout.numSites(); site += 1) {
         const [x, y] = layout.indexToCoord(site);
-        context.fillStyle = layout.colorForSite(site, spins, palette);
+        context.fillStyle = layout.colorForSite(site, snapshot.spins, palette);
         context.fillRect(
           x * cellSize + padding,
           y * cellSize + padding,

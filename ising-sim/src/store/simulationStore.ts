@@ -6,13 +6,16 @@ import {
 import { clampLatticeSize, LATTICE_SIZE } from "../config/lattice";
 import { SIMULATION_DEFAULTS } from "../config/simulationParams";
 import {
+  GeometryOrchestrator,
   SimulationError,
   SimulationSession,
   type SimInitParams,
 } from "../sim";
 
-const DEFAULT_WIDTH = LATTICE_SIZE.defaultWidth;
-const DEFAULT_HEIGHT = LATTICE_SIZE.defaultHeight;
+const DEFAULT_DIMENSIONS = [
+  LATTICE_SIZE.defaultWidth,
+  LATTICE_SIZE.defaultHeight,
+] as const;
 const TICK_MS = 50;
 const METRICS_HISTORY_LENGTH = 120;
 
@@ -59,8 +62,9 @@ function syncFromSession(current: SimulationSession) {
 
   return {
     spins: snapshot.spins,
-    width: snapshot.width,
-    height: snapshot.height,
+    dimensions: [...snapshot.dimensions],
+    rank: snapshot.rank,
+    maxNeighbors: snapshot.maxNeighbors,
     step: snapshot.step,
     geometry: snapshot.geometry,
     energy: metrics.energy,
@@ -77,8 +81,9 @@ function syncFromSession(current: SimulationSession) {
 export interface SimulationStore {
   error: string | null;
   spins: number[] | null;
-  width: number;
-  height: number;
+  dimensions: number[];
+  rank: number;
+  maxNeighbors: number;
   temperature: number;
   field: number;
   coupling: number;
@@ -101,8 +106,7 @@ export interface SimulationStore {
   setField: (field: number) => void;
   setCoupling: (coupling: number) => void;
   setGeometry: (geometry: GeometryName) => void;
-  setWidth: (width: number) => void;
-  setHeight: (height: number) => void;
+  setDimension: (axis: number, value: number) => void;
 }
 
 export const TICK_INTERVAL_MS = TICK_MS;
@@ -110,8 +114,9 @@ export const TICK_INTERVAL_MS = TICK_MS;
 export const useSimulationStore = create<SimulationStore>((set, get) => ({
   error: null,
   spins: null,
-  width: DEFAULT_WIDTH,
-  height: DEFAULT_HEIGHT,
+  dimensions: [...DEFAULT_DIMENSIONS],
+  rank: 2,
+  maxNeighbors: 4,
   temperature: SIMULATION_DEFAULTS.temperature,
   field: SIMULATION_DEFAULTS.field,
   coupling: SIMULATION_DEFAULTS.coupling,
@@ -128,8 +133,9 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   init: (params) => {
     const state = get();
     const initParams: SimInitParams = {
-      width: params?.width ?? state.width,
-      height: params?.height ?? state.height,
+      dimensions: params?.dimensions,
+      width: params?.width ?? state.dimensions[0],
+      height: params?.height ?? state.dimensions[1],
       geometry: params?.geometry ?? state.geometry,
       temperature: params?.temperature ?? state.temperature,
       field: params?.field ?? state.field,
@@ -282,15 +288,27 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   },
 
   setGeometry: (geometry) => {
-    set({ geometry });
+    const state = get();
+    const definition = GeometryOrchestrator.listDefinitions().find(
+      (entry) => entry.name === geometry,
+    );
+    if (!definition) {
+      return;
+    }
+
+    const dimensions =
+      definition.rank === state.dimensions.length
+        ? [...state.dimensions]
+        : [...definition.defaultDimensions];
+
+    set({ geometry, dimensions });
   },
 
-  setWidth: (width) => {
-    set({ width: clampLatticeSize(width, get().width) });
-  },
-
-  setHeight: (height) => {
-    set({ height: clampLatticeSize(height, get().height) });
+  setDimension: (axis, value) => {
+    const state = get();
+    const dimensions = [...state.dimensions];
+    dimensions[axis] = clampLatticeSize(value, dimensions[axis] ?? LATTICE_SIZE.defaultWidth);
+    set({ dimensions });
   },
 }));
 

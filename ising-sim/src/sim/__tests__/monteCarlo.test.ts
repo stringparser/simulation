@@ -10,8 +10,7 @@ describe("monteCarlo", () => {
     const lattice = Lattice.fromSpins([1, -1, -1, 1]);
     const interaction = new NearestNeighbor(1);
     const config = {
-      width: 2,
-      height: 2,
+      dimensions: [2, 2],
       temperature: 0.1,
       field: 0,
       coupling: 1,

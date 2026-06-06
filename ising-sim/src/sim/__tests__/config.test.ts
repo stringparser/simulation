@@ -11,8 +11,10 @@ describe("sim config", () => {
 
   it("defaults to a 16 by 16 open lattice", () => {
     const config = initParamsToConfig();
-    expect(config.width).toBe(LATTICE_SIZE.defaultWidth);
-    expect(config.height).toBe(LATTICE_SIZE.defaultHeight);
+    expect(config.dimensions).toEqual([
+      LATTICE_SIZE.defaultWidth,
+      LATTICE_SIZE.defaultHeight,
+    ]);
     expect(config.geometry).toBe("square_2d_open");
   });
 

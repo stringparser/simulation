@@ -2,12 +2,12 @@ import { useLatticeRenderer } from "../hooks/useLatticeRenderer";
 import { useLatticeViewState } from "../store/selectors";
 
 export function LatticeView() {
-  const { spins, width, height, geometry, initialized } = useLatticeViewState();
-  const containerRef = useLatticeRenderer(spins, width, height, geometry);
+  const latticeState = useLatticeViewState();
+  const containerRef = useLatticeRenderer(latticeState);
 
   return (
     <div className="lattice-area">
-      {!initialized ? (
+      {!latticeState.initialized ? (
         <p className="lattice-area__placeholder">Waiting for simulation…</p>
       ) : null}
       <div ref={containerRef} className="lattice-view" />

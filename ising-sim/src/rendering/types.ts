@@ -1,14 +1,9 @@
-import type { GeometryName } from "../config/geometries";
+import type { SessionSnapshot } from "../sim/session";
 
 export interface LatticeRenderer {
   mount(container: HTMLElement): void;
   unmount(): void;
-  draw(
-    spins: number[] | Int8Array,
-    width: number,
-    height: number,
-    geometry: GeometryName,
-  ): void;
+  draw(snapshot: SessionSnapshot): void;
 }
 
 export interface CanvasRendererOptions {
