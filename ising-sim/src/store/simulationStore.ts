@@ -14,8 +14,34 @@ import {
 const DEFAULT_WIDTH = LATTICE_SIZE.defaultWidth;
 const DEFAULT_HEIGHT = LATTICE_SIZE.defaultHeight;
 const TICK_MS = 50;
+const METRICS_HISTORY_LENGTH = 120;
 
 let session: SimulationSession | null = null;
+
+function appendMetricHistory(history: number[], value: number | null): number[] {
+  if (value === null) {
+    return [];
+  }
+
+  const next = [...history, value];
+  if (next.length <= METRICS_HISTORY_LENGTH) {
+    return next;
+  }
+
+  return next.slice(next.length - METRICS_HISTORY_LENGTH);
+}
+
+function appendMetricHistories(
+  energyHistory: number[],
+  magnetizationHistory: number[],
+  energy: number | null,
+  magnetization: number | null,
+) {
+  return {
+    energyHistory: appendMetricHistory(energyHistory, energy),
+    magnetizationHistory: appendMetricHistory(magnetizationHistory, magnetization),
+  };
+}
 
 function errorMessage(error: unknown): string {
   if (error instanceof SimulationError) {
@@ -62,6 +88,8 @@ export interface SimulationStore {
   energy: number | null;
   magnetization: number | null;
   acceptanceRate: number | null;
+  energyHistory: number[];
+  magnetizationHistory: number[];
   initialized: boolean;
   init: (params?: SimInitParams) => void;
   reset: () => void;
@@ -93,6 +121,8 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   energy: null,
   magnetization: null,
   acceptanceRate: null,
+  energyHistory: [],
+  magnetizationHistory: [],
   initialized: false,
 
   init: (params) => {
@@ -109,7 +139,13 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
 
     try {
       session = SimulationSession.create(initParams);
-      set({ ...syncFromSession(session), running: false });
+      const synced = syncFromSession(session);
+      set({
+        ...synced,
+        running: false,
+        energyHistory: [],
+        magnetizationHistory: [],
+      });
     } catch (error) {
       session = null;
       set({
@@ -156,7 +192,18 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
 
     try {
       session.runSweeps(sweeps);
-      set({ ...syncFromSession(session), running: false });
+      const synced = syncFromSession(session);
+      const state = get();
+      set({
+        ...synced,
+        running: false,
+        ...appendMetricHistories(
+          state.energyHistory,
+          state.magnetizationHistory,
+          synced.energy,
+          synced.magnetization,
+        ),
+      });
     } catch (error) {
       session.pause();
       set({ running: false, error: errorMessage(error) });
@@ -171,12 +218,19 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     try {
       session.runSweeps(session.getSweepsPerTick());
       const synced = syncFromSession(session);
+      const state = get();
       set({
         spins: synced.spins,
         step: synced.step,
         energy: synced.energy,
         magnetization: synced.magnetization,
         acceptanceRate: synced.acceptanceRate,
+        ...appendMetricHistories(
+          state.energyHistory,
+          state.magnetizationHistory,
+          synced.energy,
+          synced.magnetization,
+        ),
         error: null,
       });
     } catch (error) {

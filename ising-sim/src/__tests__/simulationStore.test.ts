@@ -20,6 +20,8 @@ describe("useSimulationStore", () => {
       energy: null,
       magnetization: null,
       acceptanceRate: null,
+      energyHistory: [],
+      magnetizationHistory: [],
       initialized: false,
     });
   });
@@ -60,5 +62,7 @@ describe("useSimulationStore", () => {
     const state = useSimulationStore.getState();
     expect(state.running).toBe(true);
     expect(state.step).toBeGreaterThan(0);
+    expect(state.energyHistory.length).toBe(1);
+    expect(state.magnetizationHistory.length).toBe(1);
   });
 });

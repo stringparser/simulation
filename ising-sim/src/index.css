@@ -197,6 +197,38 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
+.metrics-panel__charts {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-panel-border);
+}
+
+.metrics-panel__chart {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.metrics-panel__chart-label {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.sparkline {
+  display: block;
+  flex-shrink: 0;
+}
+
+.sparkline--empty {
+  width: 120px;
+  height: 32px;
+  border-radius: 4px;
+  background: var(--color-surface);
+}
+
 .lattice-area {
   display: flex;
   flex: 1;

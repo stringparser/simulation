@@ -44,6 +44,8 @@ export function useMetricsPanelState() {
       energy: state.energy,
       magnetization: state.magnetization,
       acceptanceRate: state.acceptanceRate,
+      energyHistory: state.energyHistory,
+      magnetizationHistory: state.magnetizationHistory,
       geometry: state.geometry,
       width: state.width,
       height: state.height,

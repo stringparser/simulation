@@ -3,6 +3,7 @@ import { useMetricsPanelState } from "../store/selectors";
 import { formatNumber } from "../utils/format";
 import { MetricRow } from "./MetricRow";
 import { PanelSection } from "./PanelSection";
+import { Sparkline } from "./Sparkline";
 
 export function MetricsPanel() {
   const {
@@ -10,6 +11,8 @@ export function MetricsPanel() {
     energy,
     magnetization,
     acceptanceRate,
+    energyHistory,
+    magnetizationHistory,
     geometry,
     width,
     height,
@@ -27,6 +30,17 @@ export function MetricsPanel() {
         <MetricRow label="Magnetization" value={formatNumber(magnetization, 1)} />
         <MetricRow label="Acceptance" value={formatNumber(acceptanceRate, 3)} />
       </dl>
+
+      <div className="metrics-panel__charts">
+        <div className="metrics-panel__chart">
+          <span className="metrics-panel__chart-label">Energy</span>
+          <Sparkline values={energyHistory} stroke="#4dabf7" />
+        </div>
+        <div className="metrics-panel__chart">
+          <span className="metrics-panel__chart-label">Magnetization</span>
+          <Sparkline values={magnetizationHistory} stroke="#ffa94d" />
+        </div>
+      </div>
     </PanelSection>
   );
 }

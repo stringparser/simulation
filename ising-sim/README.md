@@ -153,6 +153,8 @@ npm test
 
 The `sim/` package includes unit tests for geometry, Metropolis updates, metrics, and session lifecycle.
 
+GitHub Actions runs `npm test` and `npm run build` on push and pull requests.
+
 ## Tech stack
 
 | Layer | Technologies |
