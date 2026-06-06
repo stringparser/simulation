@@ -153,6 +153,36 @@ input {
   color: #888;
 }
 
+.controls-panel__size-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.controls-panel__size {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.controls-panel__size span {
+  color: #bdbdbd;
+  font-size: 0.875rem;
+}
+
+.controls-panel__size input {
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  background: #252525;
+  color: inherit;
+}
+
+.controls-panel__size input:disabled {
+  opacity: 0.45;
+}
+
 .controls-panel__actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

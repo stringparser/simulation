@@ -62,7 +62,7 @@ Supported geometries:
 
 | Parameter | Value |
 |-----------|-------|
-| Lattice | 16 × 16 |
+| Lattice | 16 × 16 (configurable 4–64 at init) |
 | Temperature | 2.5 |
 | Field h | 0 |
 | Coupling J | 1 |

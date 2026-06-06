@@ -1,4 +1,5 @@
 import { GEOMETRY_OPTIONS } from "../config/geometries";
+import { LATTICE_SIZE } from "../config/lattice";
 import { useSimulationStore } from "../store/simulationStore";
 
 export function ControlsPanel() {
@@ -9,6 +10,8 @@ export function ControlsPanel() {
   const field = useSimulationStore((state) => state.field);
   const coupling = useSimulationStore((state) => state.coupling);
   const geometry = useSimulationStore((state) => state.geometry);
+  const width = useSimulationStore((state) => state.width);
+  const height = useSimulationStore((state) => state.height);
   const start = useSimulationStore((state) => state.start);
   const pause = useSimulationStore((state) => state.pause);
   const stepSimulation = useSimulationStore((state) => state.stepSimulation);
@@ -17,9 +20,11 @@ export function ControlsPanel() {
   const setField = useSimulationStore((state) => state.setField);
   const setCoupling = useSimulationStore((state) => state.setCoupling);
   const setGeometry = useSimulationStore((state) => state.setGeometry);
+  const setWidth = useSimulationStore((state) => state.setWidth);
+  const setHeight = useSimulationStore((state) => state.setHeight);
 
   const disabled = connectionStatus !== "connected";
-  const geometryLocked = disabled || running;
+  const initLocked = disabled || running;
 
   return (
     <section className="controls-panel">
@@ -29,7 +34,7 @@ export function ControlsPanel() {
         <span>Geometry</span>
         <select
           value={geometry}
-          disabled={geometryLocked}
+          disabled={initLocked}
           onChange={(event) => setGeometry(event.target.value)}
         >
           {GEOMETRY_OPTIONS.map((option) => (
@@ -39,7 +44,34 @@ export function ControlsPanel() {
           ))}
         </select>
       </label>
-      <p className="controls-panel__hint">Geometry is fixed during a run. Reset to apply a new choice.</p>
+
+      <div className="controls-panel__size-row">
+        <label className="controls-panel__size">
+          <span>Width</span>
+          <input
+            type="number"
+            min={LATTICE_SIZE.min}
+            max={LATTICE_SIZE.max}
+            value={width}
+            disabled={initLocked}
+            onChange={(event) => setWidth(Number(event.target.value))}
+          />
+        </label>
+        <label className="controls-panel__size">
+          <span>Height</span>
+          <input
+            type="number"
+            min={LATTICE_SIZE.min}
+            max={LATTICE_SIZE.max}
+            value={height}
+            disabled={initLocked}
+            onChange={(event) => setHeight(Number(event.target.value))}
+          />
+        </label>
+      </div>
+      <p className="controls-panel__hint">
+        Geometry and size are fixed during a run. Reset to apply changes.
+      </p>
 
       <label className="controls-panel__field">
         <span>Temperature</span>

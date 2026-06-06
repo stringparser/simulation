@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { clampLatticeSize, LATTICE_SIZE } from "../config/lattice";
 import { SimulationClient } from "../api/websocket";
 import type {
   ConnectionStatus,
@@ -6,8 +7,8 @@ import type {
   ServerMessage,
 } from "../types/messages";
 
-const DEFAULT_WIDTH = 16;
-const DEFAULT_HEIGHT = 16;
+const DEFAULT_WIDTH = LATTICE_SIZE.defaultWidth;
+const DEFAULT_HEIGHT = LATTICE_SIZE.defaultHeight;
 const DEFAULT_TEMPERATURE = 2.5;
 const DEFAULT_FIELD = 0;
 const DEFAULT_COUPLING = 1;
@@ -39,6 +40,8 @@ export interface SimulationStore {
   setField: (field: number) => void;
   setCoupling: (coupling: number) => void;
   setGeometry: (geometry: string) => void;
+  setWidth: (width: number) => void;
+  setHeight: (height: number) => void;
   applyServerMessage: (message: ServerMessage) => void;
 }
 
@@ -149,6 +152,14 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
 
   setGeometry: (geometry) => {
     set({ geometry });
+  },
+
+  setWidth: (width) => {
+    set({ width: clampLatticeSize(width) });
+  },
+
+  setHeight: (height) => {
+    set({ height: clampLatticeSize(height) });
   },
 
   applyServerMessage: (message) => {
