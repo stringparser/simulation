@@ -5,6 +5,7 @@ import {
 } from "../config/geometries";
 import { clampLatticeSize, LATTICE_SIZE } from "../config/lattice";
 import { SIMULATION_DEFAULTS } from "../config/simulationParams";
+import type { LatticeViewMode } from "../rendering/types";
 import {
   GeometryOrchestrator,
   SimulationError,
@@ -44,6 +45,23 @@ function appendMetricHistories(
     energyHistory: appendMetricHistory(energyHistory, energy),
     magnetizationHistory: appendMetricHistory(magnetizationHistory, magnetization),
   };
+}
+
+function clampSliceIndex(
+  axis: number,
+  dimensions: readonly number[],
+  index: number,
+): number {
+  const upper = Math.max(0, (dimensions[axis] ?? 1) - 1);
+  if (!Number.isFinite(index)) {
+    return Math.floor(upper / 2);
+  }
+
+  return Math.min(Math.max(0, Math.round(index)), upper);
+}
+
+function defaultSliceIndex(dimensions: readonly number[], axis = 2): number {
+  return clampSliceIndex(axis, dimensions, Math.floor((dimensions[axis] ?? 1) / 2));
 }
 
 function errorMessage(error: unknown): string {
@@ -96,6 +114,9 @@ export interface SimulationStore {
   energyHistory: number[];
   magnetizationHistory: number[];
   initialized: boolean;
+  sliceAxis: 0 | 1 | 2;
+  sliceIndex: number;
+  viewMode: LatticeViewMode;
   init: (params?: SimInitParams) => void;
   reset: () => void;
   start: () => void;
@@ -107,6 +128,9 @@ export interface SimulationStore {
   setCoupling: (coupling: number) => void;
   setGeometry: (geometry: GeometryName) => void;
   setDimension: (axis: number, value: number) => void;
+  setSliceAxis: (axis: 0 | 1 | 2) => void;
+  setSliceIndex: (index: number) => void;
+  setViewMode: (mode: LatticeViewMode) => void;
 }
 
 export const TICK_INTERVAL_MS = TICK_MS;
@@ -129,6 +153,9 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   energyHistory: [],
   magnetizationHistory: [],
   initialized: false,
+  sliceAxis: 2,
+  sliceIndex: defaultSliceIndex(DEFAULT_DIMENSIONS),
+  viewMode: "orbit",
 
   init: (params) => {
     const state = get();
@@ -136,6 +163,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       dimensions: params?.dimensions,
       width: params?.width ?? state.dimensions[0],
       height: params?.height ?? state.dimensions[1],
+      depth: params?.depth ?? state.dimensions[2],
       geometry: params?.geometry ?? state.geometry,
       temperature: params?.temperature ?? state.temperature,
       field: params?.field ?? state.field,
@@ -151,6 +179,8 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         running: false,
         energyHistory: [],
         magnetizationHistory: [],
+        sliceAxis: state.sliceAxis,
+        sliceIndex: clampSliceIndex(state.sliceAxis, synced.dimensions, state.sliceIndex),
       });
     } catch (error) {
       session = null;
@@ -301,14 +331,44 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         ? [...state.dimensions]
         : [...definition.defaultDimensions];
 
-    set({ geometry, dimensions });
+    set({
+      geometry,
+      dimensions,
+      rank: definition.rank,
+      maxNeighbors: definition.maxNeighbors(dimensions),
+      sliceAxis: 2,
+      sliceIndex: defaultSliceIndex(dimensions),
+      viewMode: definition.rank === 3 ? "orbit" : "slice",
+    });
   },
 
   setDimension: (axis, value) => {
     const state = get();
     const dimensions = [...state.dimensions];
     dimensions[axis] = clampLatticeSize(value, dimensions[axis] ?? LATTICE_SIZE.defaultWidth);
-    set({ dimensions });
+    set({
+      dimensions,
+      sliceIndex: clampSliceIndex(state.sliceAxis, dimensions, state.sliceIndex),
+    });
+  },
+
+  setSliceAxis: (axis) => {
+    const state = get();
+    set({
+      sliceAxis: axis,
+      sliceIndex: clampSliceIndex(axis, state.dimensions, state.sliceIndex),
+    });
+  },
+
+  setSliceIndex: (index) => {
+    const state = get();
+    set({
+      sliceIndex: clampSliceIndex(state.sliceAxis, state.dimensions, index),
+    });
+  },
+
+  setViewMode: (mode) => {
+    set({ viewMode: mode });
   },
 }));
 

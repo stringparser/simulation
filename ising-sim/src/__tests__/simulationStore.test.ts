@@ -24,6 +24,9 @@ describe("useSimulationStore", () => {
       energyHistory: [],
       magnetizationHistory: [],
       initialized: false,
+      sliceAxis: 2,
+      sliceIndex: 3,
+      viewMode: "orbit",
     });
   });
 
@@ -59,6 +62,25 @@ describe("useSimulationStore", () => {
   it("updates dimension values before reset", () => {
     useSimulationStore.getState().setDimension(0, 20);
     expect(useSimulationStore.getState().dimensions).toEqual([20, 16]);
+  });
+
+  it("initializes a 3D cubic simulation", () => {
+    useSimulationStore.getState().setGeometry("cubic_3d_open");
+    useSimulationStore.getState().init({ seed: 3, dimensions: [8, 8, 8] });
+
+    const state = useSimulationStore.getState();
+    expect(state.initialized).toBe(true);
+    expect(state.rank).toBe(3);
+    expect(state.maxNeighbors).toBe(6);
+    expect(state.spins).toHaveLength(512);
+  });
+
+  it("clamps slice index when dimensions change", () => {
+    useSimulationStore.getState().setGeometry("cubic_3d_open");
+    useSimulationStore.getState().setSliceIndex(7);
+    useSimulationStore.getState().setDimension(2, 4);
+
+    expect(useSimulationStore.getState().sliceIndex).toBe(3);
   });
 
   it("updates step on tick when running", () => {

@@ -17,6 +17,7 @@ export interface SimInitParams {
   dimensions?: readonly number[];
   width?: number;
   height?: number;
+  depth?: number;
   geometry?: string;
   temperature?: number;
   field?: number;
@@ -49,12 +50,22 @@ export function initParamsToConfig(params: SimInitParams = {}): SimConfig {
     geometry = params.geometry;
   }
 
+  const definition = GeometryOrchestrator.listDefinitions().find(
+    (entry) => entry.name === geometry,
+  );
+
   const dimensions =
     params.dimensions ??
-    [
-      params.width ?? LATTICE_SIZE.defaultWidth,
-      params.height ?? LATTICE_SIZE.defaultHeight,
-    ];
+    (definition?.rank === 3
+      ? [
+          params.width ?? LATTICE_SIZE.defaultDepth,
+          params.height ?? LATTICE_SIZE.defaultDepth,
+          params.depth ?? LATTICE_SIZE.defaultDepth,
+        ]
+      : [
+          params.width ?? LATTICE_SIZE.defaultWidth,
+          params.height ?? LATTICE_SIZE.defaultHeight,
+        ]);
 
   GeometryOrchestrator.validate(geometry, dimensions);
 

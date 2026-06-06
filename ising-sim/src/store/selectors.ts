@@ -31,6 +31,13 @@ export function useControlsPanelState() {
       setCoupling: state.setCoupling,
       setGeometry: state.setGeometry,
       setDimension: state.setDimension,
+      rank: state.rank,
+      sliceAxis: state.sliceAxis,
+      sliceIndex: state.sliceIndex,
+      viewMode: state.viewMode,
+      setSliceAxis: state.setSliceAxis,
+      setSliceIndex: state.setSliceIndex,
+      setViewMode: state.setViewMode,
     })),
   );
 }
@@ -60,6 +67,9 @@ export function useLatticeViewState() {
       maxNeighbors: state.maxNeighbors,
       step: state.step,
       geometry: state.geometry,
+      sliceAxis: state.sliceAxis,
+      sliceIndex: state.sliceIndex,
+      viewMode: state.viewMode,
     })),
   );
 }

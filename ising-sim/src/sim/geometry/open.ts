@@ -38,7 +38,7 @@ export class Square2DOpen implements LayoutGeometry {
     return this.width * this.height;
   }
 
-  dimensions(): [number, number] {
+  dimensions(): readonly number[] {
     return [this.width, this.height];
   }
 
@@ -46,12 +46,17 @@ export class Square2DOpen implements LayoutGeometry {
     return this.neighborLists[site];
   }
 
-  indexToCoord(site: number): [number, number] {
+  indexToCoord(site: number): readonly number[] {
     return [site % this.width, Math.floor(site / this.width)];
   }
 
-  coordToIndex(x: number, y: number): number | null {
-    if (x >= this.width || y >= this.height) {
+  coordToIndex(coord: readonly number[]): number | null {
+    if (coord.length < 2) {
+      return null;
+    }
+
+    const [x, y] = coord;
+    if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
       return null;
     }
     return y * this.width + x;

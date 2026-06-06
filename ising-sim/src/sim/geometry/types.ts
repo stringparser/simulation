@@ -7,9 +7,9 @@ export interface Geometry {
 
 /** Coordinate helpers for layout-aware geometry implementations. */
 export interface LayoutGeometry extends Geometry {
-  dimensions(): [number, number];
-  indexToCoord(site: number): [number, number];
-  coordToIndex(x: number, y: number): number | null;
+  dimensions(): readonly number[];
+  indexToCoord(site: number): readonly number[];
+  coordToIndex(coord: readonly number[]): number | null;
   name(): GeometryName;
 }
 

@@ -30,7 +30,7 @@ export class GeometryInstanceImpl implements GeometryInstance {
       return null;
     }
 
-    return this.core.coordToIndex(coord[0], coord[1]);
+    return this.core.coordToIndex(coord);
   }
 
   maxNeighbors(): number {

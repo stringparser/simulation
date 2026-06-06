@@ -24,6 +24,13 @@ export class SimulationError extends Error {
     );
   }
 
+  static invalidLatticeVolume(volume: number, maxVolume: number): SimulationError {
+    return new SimulationError(
+      `lattice volume must be at most ${maxVolume}, got ${volume}`,
+      "invalid_lattice_size",
+    );
+  }
+
   static unsupportedGeometry(name: string): SimulationError {
     return new SimulationError(`unsupported geometry: ${name}`, "init_failed");
   }
