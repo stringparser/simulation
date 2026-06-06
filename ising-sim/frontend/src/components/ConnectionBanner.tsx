@@ -5,9 +5,9 @@ export function ConnectionBanner() {
   const error = useSimulationStore((state) => state.error);
 
   const statusLabel = {
-    disconnected: "Disconnected",
-    connecting: "Connecting…",
-    connected: "Connected",
+    disconnected: "Backend disconnected",
+    connecting: "Backend connecting…",
+    connected: "Backend connected",
   }[connectionStatus];
 
   return (

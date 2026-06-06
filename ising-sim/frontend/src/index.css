@@ -20,30 +20,25 @@ select {
 }
 
 .app {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 2rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  height: 100vh;
+}
+
+.app__content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1.5rem 1.5rem 2rem;
 }
 
 .app__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
 .app__header h1 {
   margin: 0;
   font-size: 1.75rem;
-}
-
-.app__layout {
-  display: grid;
-  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
 }
 
 .connection-banner {
@@ -76,10 +71,12 @@ select {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  min-height: 0;
   padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #1a1a1a;
-  border: 1px solid #2d2d2d;
-  border-radius: 12px;
+  border-left: 1px solid #2d2d2d;
 }
 
 .side-panel__heading {
@@ -219,6 +216,7 @@ select {
 
 .lattice-area {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -243,11 +241,19 @@ select {
 }
 
 @media (max-width: 820px) {
-  .app__layout {
+  .app {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .side-panel {
+    max-height: 50vh;
+    border-left: none;
+    border-top: 1px solid #2d2d2d;
   }
 
   .lattice-area {
-    order: 2;
+    flex: none;
   }
 }
