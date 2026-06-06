@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { ConnectionBanner } from "./components/ConnectionBanner";
-import { ControlsPanel } from "./components/ControlsPanel";
 import { LatticeView } from "./components/LatticeView";
-import { MetricsPanel } from "./components/MetricsPanel";
+import { SidePanel } from "./components/SidePanel";
 import { useSimulationStore } from "./store/simulationStore";
 
 export function App() {
@@ -22,11 +21,8 @@ export function App() {
       </header>
 
       <div className="app__layout">
+        <SidePanel />
         <LatticeView />
-        <aside className="app__sidebar">
-          <ControlsPanel />
-          <MetricsPanel />
-        </aside>
       </div>
     </main>
   );

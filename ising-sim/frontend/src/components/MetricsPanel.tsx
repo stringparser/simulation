@@ -20,8 +20,8 @@ export function MetricsPanel() {
 
   return (
     <section className="metrics-panel">
-      <h2>Metrics</h2>
-      <dl>
+      <h2 className="side-panel__heading">Metrics</h2>
+      <dl className="metrics-panel__list">
         <div>
           <dt>Geometry</dt>
           <dd>

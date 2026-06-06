@@ -1,6 +1,7 @@
 import { GEOMETRY_OPTIONS } from "../config/geometries";
 import { LATTICE_SIZE } from "../config/lattice";
 import { useSimulationStore } from "../store/simulationStore";
+import { SliderControl } from "./SliderControl";
 
 export function ControlsPanel() {
   const connectionStatus = useSimulationStore((state) => state.connectionStatus);
@@ -25,14 +26,16 @@ export function ControlsPanel() {
 
   const disabled = connectionStatus !== "connected";
   const initLocked = disabled || running;
+  const paramsLocked = disabled || !initialized;
 
   return (
     <section className="controls-panel">
-      <h2>Controls</h2>
+      <h2 className="side-panel__heading">Controls</h2>
 
-      <label className="controls-panel__select">
-        <span>Geometry</span>
+      <label className="field-control">
+        <span className="field-control__label">Geometry</span>
         <select
+          className="field-control__input"
           value={geometry}
           disabled={initLocked}
           onChange={(event) => setGeometry(event.target.value)}
@@ -46,9 +49,10 @@ export function ControlsPanel() {
       </label>
 
       <div className="controls-panel__size-row">
-        <label className="controls-panel__size">
-          <span>Width</span>
+        <label className="field-control">
+          <span className="field-control__label">Width</span>
           <input
+            className="field-control__input"
             type="number"
             min={LATTICE_SIZE.min}
             max={LATTICE_SIZE.max}
@@ -57,9 +61,10 @@ export function ControlsPanel() {
             onChange={(event) => setWidth(Number(event.target.value))}
           />
         </label>
-        <label className="controls-panel__size">
-          <span>Height</span>
+        <label className="field-control">
+          <span className="field-control__label">Height</span>
           <input
+            className="field-control__input"
             type="number"
             min={LATTICE_SIZE.min}
             max={LATTICE_SIZE.max}
@@ -69,51 +74,40 @@ export function ControlsPanel() {
           />
         </label>
       </div>
+
       <p className="controls-panel__hint">
         Geometry and size are fixed during a run. Reset to apply changes.
       </p>
 
-      <label className="controls-panel__field">
-        <span>Temperature</span>
-        <input
-          type="range"
-          min="0.5"
-          max="5"
-          step="0.1"
-          value={temperature}
-          disabled={disabled || !initialized}
-          onChange={(event) => setTemperature(Number(event.target.value))}
-        />
-        <output>{temperature.toFixed(1)}</output>
-      </label>
+      <SliderControl
+        label="Temperature"
+        min={0.5}
+        max={5}
+        step={0.1}
+        value={temperature}
+        disabled={paramsLocked}
+        onChange={setTemperature}
+      />
 
-      <label className="controls-panel__field">
-        <span>Field h</span>
-        <input
-          type="range"
-          min="-2"
-          max="2"
-          step="0.1"
-          value={field}
-          disabled={disabled || !initialized}
-          onChange={(event) => setField(Number(event.target.value))}
-        />
-        <output>{field.toFixed(1)}</output>
-      </label>
+      <SliderControl
+        label="Field h"
+        min={-2}
+        max={2}
+        step={0.1}
+        value={field}
+        disabled={paramsLocked}
+        onChange={setField}
+      />
 
-      <label className="controls-panel__field">
-        <span>Coupling J</span>
-        <input
-          type="range"
-          min="0.1"
-          max="2"
-          step="0.1"
-          value={coupling}
-          disabled={disabled || !initialized}
-          onChange={(event) => setCoupling(Number(event.target.value))}
-        />
-        <output>{coupling.toFixed(1)}</output>
-      </label>
+      <SliderControl
+        label="Coupling J"
+        min={0.1}
+        max={2}
+        step={0.1}
+        value={coupling}
+        disabled={paramsLocked}
+        onChange={setCoupling}
+      />
 
       <div className="controls-panel__actions">
         <button type="button" disabled={disabled || !initialized || running} onClick={start}>

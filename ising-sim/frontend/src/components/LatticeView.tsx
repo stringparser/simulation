@@ -33,10 +33,11 @@ export function LatticeView() {
   }, [spins, width, height]);
 
   return (
-    <section className="lattice-panel">
-      <h2>Lattice</h2>
-      {!initialized ? <p className="lattice-view__placeholder">Waiting for simulation…</p> : null}
+    <div className="lattice-area">
+      {!initialized ? (
+        <p className="lattice-area__placeholder">Waiting for simulation…</p>
+      ) : null}
       <div ref={containerRef} className="lattice-view" />
-    </section>
+    </div>
   );
 }

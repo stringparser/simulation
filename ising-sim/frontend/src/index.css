@@ -14,12 +14,13 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
 .app {
-  max-width: 960px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 1.5rem 1rem 2rem;
 }
@@ -40,14 +41,9 @@ input {
 
 .app__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
   gap: 1.5rem;
-}
-
-.app__sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  align-items: start;
 }
 
 .connection-banner {
@@ -76,66 +72,47 @@ input {
   color: #ffb3b3;
 }
 
-.lattice-panel,
-.controls-panel,
-.metrics-panel {
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
   background: #1a1a1a;
   border: 1px solid #2d2d2d;
   border-radius: 12px;
-  padding: 1rem;
 }
 
-.lattice-panel h2,
-.controls-panel h2,
-.metrics-panel h2 {
+.side-panel__heading {
   margin: 0 0 0.75rem;
   font-size: 1rem;
 }
 
-.lattice-view {
+.controls-panel,
+.metrics-panel {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 288px;
+  flex-direction: column;
 }
 
-.lattice-view__placeholder {
-  margin: 0 0 0.75rem;
-  color: #888;
+.metrics-panel {
+  padding-top: 1.5rem;
+  border-top: 1px solid #2d2d2d;
 }
 
-.lattice-canvas {
-  display: block;
-  image-rendering: pixelated;
-  border-radius: 8px;
-}
-
-.controls-panel__field {
-  display: grid;
-  grid-template-columns: 5rem 1fr 3rem;
-  align-items: center;
-  gap: 0.5rem;
+.field-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
   margin-bottom: 0.75rem;
 }
 
-.controls-panel__field span {
+.field-control__label {
   color: #bdbdbd;
+  font-size: 0.875rem;
 }
 
-.controls-panel__select {
-  display: grid;
-  grid-template-columns: 5rem 1fr;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.controls-panel__select span {
-  color: #bdbdbd;
-}
-
-.controls-panel__select select {
+.field-control__input {
   width: 100%;
+  min-width: 0;
   padding: 0.45rem 0.5rem;
   border: 1px solid #3a3a3a;
   border-radius: 8px;
@@ -143,12 +120,51 @@ input {
   color: inherit;
 }
 
-.controls-panel__select select:disabled {
+.field-control__input:disabled {
   opacity: 0.45;
 }
 
+.slider-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.slider-control__label {
+  color: #bdbdbd;
+  font-size: 0.875rem;
+}
+
+.slider-control__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.slider-control__input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  accent-color: #4dabf7;
+}
+
+.slider-control__input:disabled {
+  opacity: 0.45;
+}
+
+.slider-control__value {
+  flex-shrink: 0;
+  min-width: 2.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #e8e8e8;
+}
+
 .controls-panel__hint {
-  margin: -0.25rem 0 0.75rem;
+  margin: 0 0 0.75rem;
   font-size: 0.8125rem;
   color: #888;
 }
@@ -157,37 +173,13 @@ input {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.controls-panel__size {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.controls-panel__size span {
-  color: #bdbdbd;
-  font-size: 0.875rem;
-}
-
-.controls-panel__size input {
-  width: 100%;
-  padding: 0.45rem 0.5rem;
-  border: 1px solid #3a3a3a;
-  border-radius: 8px;
-  background: #252525;
-  color: inherit;
-}
-
-.controls-panel__size input:disabled {
-  opacity: 0.45;
 }
 
 .controls-panel__actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 .controls-panel__actions button {
@@ -204,13 +196,13 @@ input {
   cursor: not-allowed;
 }
 
-.metrics-panel dl {
+.metrics-panel__list {
   margin: 0;
   display: grid;
   gap: 0.65rem;
 }
 
-.metrics-panel dl div {
+.metrics-panel__list div {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
@@ -225,8 +217,37 @@ input {
   font-variant-numeric: tabular-nums;
 }
 
+.lattice-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  padding: 1rem 0;
+}
+
+.lattice-area__placeholder {
+  margin: 0 0 1rem;
+  color: #888;
+}
+
+.lattice-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lattice-canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
 @media (max-width: 820px) {
   .app__layout {
     grid-template-columns: 1fr;
+  }
+
+  .lattice-area {
+    order: 2;
   }
 }
