@@ -11,7 +11,7 @@ help:
 	@echo "Ising simulator"
 	@echo ""
 	@echo "  make setup   Install backend and frontend dependencies"
-	@echo "  make dev     Run backend placeholder + frontend dev server"
+	@echo "  make dev     Run backend WebSocket server + frontend dev server"
 	@echo "  make demo    Run Phase 1 backend simulation benchmark"
 	@echo "  make build   Build backend release binary and frontend bundle"
 	@echo "  make test    Run backend and frontend tests"
@@ -29,14 +29,14 @@ frontend-setup:
 	cd "$(FRONTEND)" && npm install
 
 dev:
-	@echo "Starting dev mode (backend placeholder, frontend on http://localhost:$(FRONTEND_PORT))..."
+	@echo "Starting dev mode (backend ws://127.0.0.1:$(BACKEND_PORT)/ws, frontend on http://localhost:$(FRONTEND_PORT))..."
 	@$(MAKE) -j2 backend-dev frontend-dev
 
 demo:
 	cd "$(BACKEND)" && cargo run -- --demo
 
 backend-dev:
-	cd "$(BACKEND)" && cargo run
+	cd "$(BACKEND)" && BACKEND_PORT=$(BACKEND_PORT) cargo run
 
 frontend-dev:
 	cd "$(FRONTEND)" && npm run dev -- --port $(FRONTEND_PORT)

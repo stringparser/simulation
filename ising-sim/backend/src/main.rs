@@ -1,22 +1,33 @@
 use ising_backend::{
-    energy, magnetization, run_sweeps, Geometry, Lattice, NearestNeighbor, SimConfig,
+    energy, magnetization, run_sweeps, run_server, Geometry, Lattice, NearestNeighbor, SimConfig,
     Square2DOpen,
 };
-use std::thread;
-use std::time::Duration;
+use std::env;
+use std::net::SocketAddr;
+use tracing_subscriber::EnvFilter;
 
-fn main() {
-    let args: Vec<String> = std::env::args().collect();
+#[tokio::main]
+async fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env().add_directive("ising_backend=info".parse().unwrap()))
+        .init();
+
+    let args: Vec<String> = env::args().collect();
 
     if args.iter().any(|arg| arg == "--demo") {
         run_demo();
         return;
     }
 
-    println!("Ising backend dev mode (WebSocket server arrives in Phase 2).");
-    println!("Run `make demo` to execute the Phase 1 simulation benchmark.");
-    loop {
-        thread::sleep(Duration::from_secs(3600));
+    let port = env::var("BACKEND_PORT")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(8080);
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+
+    if let Err(error) = run_server(addr).await {
+        eprintln!("server error: {error}");
+        std::process::exit(1);
     }
 }
 
