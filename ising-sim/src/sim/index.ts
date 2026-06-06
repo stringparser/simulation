@@ -2,7 +2,7 @@ export { initParamsToConfig, validateLatticeSize, DEFAULT_SIM_CONFIG } from "./c
 export type { SimConfig, SimInitParams } from "./config";
 export { SimulationError } from "./errors";
 export type { SimulationErrorCode } from "./errors";
-export { createGeometry, GeometryOrchestrator } from "./geometry";
+export { GeometryOrchestrator } from "./geometry";
 export type { Geometry, GeometryDefinition, GeometryInstance, LayoutGeometry } from "./geometry";
 export { NearestNeighbor } from "./interaction";
 export type { Interaction } from "./interaction";

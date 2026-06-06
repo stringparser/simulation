@@ -2,7 +2,7 @@
 
 Track refactor work to centralize lattice topology, configuration, validation, and visualization helpers behind a single **GeometryOrchestrator** API. Enables 3D geometries later without scattering changes across store, session, config, and rendering.
 
-**Status:** Phase 4 complete  
+**Status:** All phases complete  
 **Branch target:** `cursor/ising-sim-plan` (or follow-up branch)  
 **Prerequisite:** Browser-only app at `ising-sim/` root (flatten complete)
 
@@ -261,32 +261,32 @@ Renderer reconstructs `GeometryInstance` via `GeometryOrchestrator.createFromSna
 
 ---
 
-## File map (after Phase 3)
+## File map (current)
 
 ```
 src/sim/geometry/
   types.ts           # Geometry (slim), GeometryDefinition, GeometryInstance interfaces
-  definitions.ts     # Registry: square_2d_open, square_2d_periodic
+  definitions.ts     # Registry: 2D + 3D presets
   orchestrator.ts    # GeometryOrchestrator facade
   instance.ts        # GeometryInstance implementation
-  open2d.ts          # rename from open.ts (optional)
-  periodic2d.ts      # rename from periodic.ts (optional)
-  index.ts           # public exports: orchestrator, types, GeometryName from config
+  open.ts            # Square2DOpen
+  periodic.ts        # Square2DPeriodic
+  open3d.ts          # Cubic3DOpen
+  periodic3d.ts      # Cubic3DPeriodic
+  index.ts           # public exports: orchestrator, types, GEOMETRY_DEFINITIONS
 
 src/config/
-  geometries.ts      # GeometryName union + DEFAULT; labels from orchestrator.optionsForUi()
-  lattice.ts         # validateDimensions(dims), clampDimension, maxVolume
+  geometries.ts      # GeometryName union + isGeometryName helper
+  lattice.ts         # validateDimensions(dims), clampLatticeSize, maxVolume
+  colors.ts          # lerp / palette helpers
 
 src/rendering/
-  types.ts           # snapshot-based LatticeRenderer
-  canvasRenderer.ts  # uses GeometryInstance.colorForSite
-  colors.ts          # lerp / palette helpers (extracted from neighborColors)
+  types.ts           # snapshot-based LatticeRenderer, RenderOptions (orbit/slice)
+  canvasRenderer.ts  # 2D grid + 3D orbit/slice drawing
+  projection3d.ts    # yaw/pitch projection for orbit view
 
 src/store/
-  simulationStore.ts # dimensions[], geometry
-
-DELETED (Phase 2):
-  rendering/neighborColors.ts  # topology removed; color math moved
+  simulationStore.ts # dimensions[], geometry, viewMode, slice state
 ```
 
 ---
@@ -358,12 +358,12 @@ function latticeHeight(state) { return state.dimensions[1]; }
 
 ## Success criteria (whole refactor)
 
-- [ ] One registry file lists all geometry presets
-- [ ] Session, store, renderer import only `GeometryOrchestrator`
-- [ ] No duplicated neighbor topology in rendering
-- [ ] Snapshot uses `dimensions[]` + `rank`
-- [ ] 2D UI and viz unchanged from user perspective
-- [ ] Adding 3D = registry entry + impl + slice UI (Phase 4 only)
+- [x] One registry file lists all geometry presets
+- [x] Session, store, renderer import only `GeometryOrchestrator`
+- [x] No duplicated neighbor topology in rendering
+- [x] Snapshot uses `dimensions[]` + `rank`
+- [x] 2D UI and viz unchanged from user perspective
+- [x] Adding 3D = registry entry + impl + slice/orbit UI
 
 ---
 
@@ -373,4 +373,4 @@ function latticeHeight(state) { return state.dimensions[1]; }
 - [x] Phase 2 — Unified coloring
 - [x] Phase 3 — Store + snapshot renderer
 - [x] Phase 4 — 3D + slices
-- [ ] Phase 5 — Docs + cleanup
+- [x] Phase 5 — Docs + cleanup

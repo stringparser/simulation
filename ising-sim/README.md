@@ -1,14 +1,15 @@
 # Ising Simulator
 
-Real-time 2D Ising model visualization in the browser: a TypeScript Monte Carlo engine with a React UI for live lattice rendering and parameter control.
+Real-time Ising model visualization in the browser: a TypeScript Monte Carlo engine with a React UI for live lattice rendering and parameter control. Supports **2D square** and **3D cubic** lattices.
 
 ## Features
 
 - **Live simulation** — start, pause, and step a Metropolis Monte Carlo run
-- **Canvas lattice view** — spins colored by aligned neighbor count (black → blue/orange gradient)
-- **Configurable at init** — lattice size (4–64), geometry (open edges or periodic/torus)
+- **2D canvas lattice** — spins colored by aligned neighbor count (black → blue/orange gradient)
+- **3D cubic lattices** — open or periodic boundaries; orbit view with mouse drag, or axis slice inspection
+- **Configurable at init** — per-axis size (4–64), geometry preset; total volume capped at 32 768 sites
 - **Runtime parameters** — temperature `T`, external field `h`, coupling `J` adjustable mid-run
-- **Observables** — energy, magnetization, acceptance rate, sweep count
+- **Observables** — energy, magnetization, acceptance rate, sweep count, metric sparklines
 
 ## Prerequisites
 
@@ -24,7 +25,9 @@ make dev
 
 Then open http://localhost:5173.
 
-The simulation runs entirely in the browser. Use **Start** to run continuously, **Step** for single sweeps, or **Reset** after changing geometry/size.
+The simulation runs entirely in the browser. Use **Start** to run continuously, **Step** for single sweeps, or **Reset** after changing geometry or size.
+
+For 3D presets, drag the lattice to rotate (orbit mode) or switch to slice mode to inspect a plane.
 
 ## Make targets
 
@@ -46,35 +49,43 @@ The simulation runs entirely in the browser. Use **Start** to run continuously, 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Browser (Vite + React + Zustand + Jest)                    │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
-│  │ LatticeView  │  │ Controls     │  │ MetricsPanel      │  │
-│  │ (canvas)     │  │ T, h, J, run │  │ E, M, step count  │  │
-│  └──────┬───────┘  └──────┬───────┘  └─────────┬─────────┘  │
-│         └─────────────────┴────────────────────┘            │
-│                           │                                 │
-│              simulationStore (Zustand)                      │
-│                           │                                 │
-│  ┌────────────────────────┴─────────────────────────────┐   │
-│  │ SimulationSession (TypeScript)                       │   │
-│  │  geometry → interaction → Metropolis sweep → metrics │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+ControlsPanel ──┐
+MetricsPanel  ──┼──► simulationStore ──► SimulationSession
+LatticeView   ──┘         │                      │
+                          │                      ▼
+                          │            GeometryOrchestrator
+                          │                      │
+                          │         ┌────────────┴────────────┐
+                          │         ▼                         ▼
+                          │   GeometryDefinition[]     Geometry impls
+                          │   (registry in definitions.ts)
+                          │
+                          └──► canvas renderer (2D grid or 3D orbit/slice)
 ```
 
-When **Start** is pressed, a 50 ms interval advances the simulation in the main thread.
+When **Start** is pressed, a requestAnimationFrame loop advances the simulation about every 50 ms.
+
+### Dimension model
+
+Lattice shape is stored as `dimensions[]` plus `rank` (2 or 3):
+
+| Rank | Example | Snapshot fields |
+|------|---------|-----------------|
+| 2 | `[16, 16]` | width × height |
+| 3 | `[8, 8, 8]` | width × height × depth |
+
+`SessionSnapshot` carries `dimensions`, `rank`, and `maxNeighbors`. The renderer reconstructs a `GeometryInstance` via `GeometryOrchestrator.createFromSnapshot()`.
 
 ## Physics
 
-Ferromagnetic Ising model on a 2D square lattice:
+Ferromagnetic Ising model on a square (2D) or cubic (3D) lattice:
 
 \[
 H = -J \sum_{\langle i,j \rangle} s_i s_j - h \sum_i s_i
 \]
 
 - Spins \(s_i \in \{+1, -1\}\)
-- \(J > 0\): ferromagnetic nearest-neighbor coupling
+- \(J > 0\): ferromagnetic nearest-neighbor coupling (4 neighbors in 2D, 6 in 3D)
 - Single-spin **Metropolis** updates: flip site \(i\) with probability \(\min(1, e^{-\beta \Delta E})\)
 - \(\beta = 1/T\) (Boltzmann constant set to 1 in code)
 
@@ -82,7 +93,8 @@ H = -J \sum_{\langle i,j \rangle} s_i s_j - h \sum_i s_i
 
 | Parameter | Default | Notes |
 |-----------|---------|-------|
-| Lattice size | 16 × 16 | Valid range: **4–64** per side; set at init |
+| 2D size | 16 × 16 | Per-axis range **4–64**; set at init |
+| 3D size | 8 × 8 × 8 | Same per-axis bounds; volume ≤ **32 768** |
 | Geometry | `square_2d_open` | Fixed for the run; change via Reset |
 | Temperature \(T\) | 2.5 | Must be \(> 0\); adjustable mid-run |
 | Field \(h\) | 0 | Adjustable mid-run |
@@ -92,45 +104,57 @@ H = -J \sum_{\langle i,j \rangle} s_i s_j - h \sum_i s_i
 
 ### Geometries
 
-| Name | Description |
-|------|-------------|
-| `square_2d_open` | Open edges — boundary sites have fewer neighbors |
-| `square_2d_periodic` | Torus — periodic boundary conditions, every site has 4 neighbors |
+Registry: `src/sim/geometry/definitions.ts` (single source of truth).
+
+| Name | Rank | Description |
+|------|------|-------------|
+| `square_2d_open` | 2 | Open edges — boundary sites have fewer neighbors |
+| `square_2d_periodic` | 2 | Torus — periodic BCs, 4 neighbors per site |
+| `cubic_3d_open` | 3 | Open cube — face/corner sites have fewer neighbors |
+| `cubic_3d_periodic` | 3 | Periodic cube — 6 neighbors per site |
 
 Geometry and lattice size are chosen in the UI and **fixed for the lifetime of a run**. Click **Reset** to re-initialize with new values.
+
+3D view modes (view-only, no reset required):
+
+| Mode | Interaction |
+|------|-------------|
+| **Orbit** | Drag the lattice to rotate (canvas projection) |
+| **Slice** | Pick axis and index to show one plane |
 
 ## Project layout
 
 ```
 ising-sim/
-├── Makefile              # setup, dev, test, build
-├── README.md             # this file
-├── PLAN.md               # original design document
+├── Makefile
+├── README.md
+├── PLAN.md                 # project history and design decisions
+├── GEOMETRY-PLAN.md        # geometry orchestrator refactor (complete)
 ├── package.json
-├── vite.config.ts
-├── tsconfig.json
 └── src/
-    ├── App.tsx
-    ├── hooks/useSimulationLoop.ts
-    ├── store/simulationStore.ts
-    ├── sim/                  # Monte Carlo engine
-    ├── config/               # lattice bounds, geometry options
-    ├── rendering/            # canvas renderer
-    ├── components/           # LatticeView, Controls, Metrics
-    └── __tests__/
+    ├── sim/
+    │   ├── geometry/       # GeometryOrchestrator, definitions, 2D/3D impls
+    │   ├── session.ts      # SimulationSession + snapshot
+    │   └── …               # Metropolis, metrics, interaction
+    ├── store/              # Zustand simulationStore
+    ├── rendering/          # canvas renderer, 3D projection
+    ├── components/         # LatticeView, Controls, Metrics, Sparklines
+    ├── hooks/              # useSimulationLoop, useLatticeRenderer
+    └── config/             # lattice bounds, colors, slider ranges
 ```
 
 ## Frontend modules
 
 | Module | Responsibility |
 |--------|----------------|
-| `sim/` | `SimulationSession`, geometry, Metropolis sweep, metrics |
-| `store/simulationStore.ts` | Zustand single source of truth; drives local session |
-| `hooks/useSimulationLoop.ts` | 50 ms tick loop while running |
-| `rendering/` | `LatticeRenderer` interface; neighbor-color canvas renderer |
-| `components/LatticeView` | Mounts renderer, redraws on spin updates |
-| `components/ControlsPanel` | Geometry, size, T/h/J sliders, Start/Pause/Step/Reset |
-| `components/MetricsPanel` | Energy, magnetization, acceptance, step count |
+| `sim/geometry/` | `GeometryOrchestrator` facade; registry + 2D/3D topology |
+| `sim/session.ts` | `SimulationSession`, `SessionSnapshot`, metrics |
+| `store/simulationStore.ts` | Zustand state: `dimensions[]`, geometry, slice/orbit view |
+| `hooks/useSimulationLoop.ts` | rAF tick loop while running |
+| `rendering/` | Canvas renderer; 2D grid, 3D orbit projection, slice mode |
+| `components/LatticeView` | Mounts renderer; pointer drag for 3D orbit |
+| `components/ControlsPanel` | Geometry, size, T/h/J, 3D view mode, run controls |
+| `components/MetricsPanel` | Energy, magnetization, sparklines, step count |
 
 ## Development
 
@@ -151,7 +175,7 @@ Run individually:
 npm test
 ```
 
-The `sim/` package includes unit tests for geometry, Metropolis updates, metrics, and session lifecycle.
+Tests cover geometry orchestrator, session snapshots, store, renderer, and components.
 
 GitHub Actions runs `npm test` and `npm run build` on push and pull requests.
 
@@ -163,4 +187,4 @@ GitHub Actions runs `npm test` and `npm run build` on push and pull requests.
 | UI | React 19, Zustand, Vite, Jest, Testing Library |
 | Dev tooling | Makefile |
 
-See [PLAN.md](./PLAN.md) for the original design rationale and future work (Glauber dynamics, larger lattices, phase diagrams, etc.).
+See [PLAN.md](./PLAN.md) for project history and [GEOMETRY-PLAN.md](./GEOMETRY-PLAN.md) for the geometry orchestrator refactor notes.
